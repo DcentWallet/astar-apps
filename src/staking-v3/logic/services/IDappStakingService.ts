@@ -1,4 +1,6 @@
+import { TvlModel } from 'src/v2/models';
 import {
+  BonusRewards,
   CombinedDappInfo,
   DappInfo,
   DappStakeInfo,
@@ -13,7 +15,6 @@ import {
 export interface IDappStakingService {
   /**
    * Gets the dapps for the given network.
-   * @param network Name of the network to get dapps for.
    * @returns A map containing full dapps info (chain and firebase data) and chain info (only for new dapps not stored in firebase yet).
    */
   getDapps(network: string): Promise<{ fullInfo: CombinedDappInfo[]; chainInfo: DappInfo[] }>;
@@ -27,7 +28,7 @@ export interface IDappStakingService {
    */
   claimUnstakeAndUnlock(
     contractAddress: string,
-    amount: number,
+    amount: bigint,
     senderAddress: string,
     successMessage: string
   ): Promise<void>;
@@ -82,7 +83,7 @@ export interface IDappStakingService {
    * @param senderAddress Staker address.
    * @returns Staker bonus rewards amount.
    */
-  getBonusRewards(senderAddress: string): Promise<bigint>;
+  getBonusRewards(senderAddress: string): Promise<BonusRewards>;
 
   /**
    * Invokes claim bonus rewards call.
@@ -122,6 +123,22 @@ export interface IDappStakingService {
     successMessage: string
   ): Promise<void>;
 
+  /**
+   * Batches and invokes multiple calls
+   * 1. Claims staker and bonus rewards if available
+   * 2. Moves a given tokens amount from one dApp to another
+   * @param senderAddress Staker address.
+   * @param moveFromAddress Address of the contract to move stake from.
+   * @param stakeInfo A map containing contract addresses and amounts to stake.
+   * @param successMessage Message to be displayed on the call success.
+   */
+  claimAndMoveStake(
+    senderAddress: string,
+    moveFromAddress: string,
+    stakeInfo: DappStakeInfo[],
+    successMessage: string
+  ): Promise<void>;
+
   getDappRewardsForPeriod(contractAddress: string, period: number): Promise<[bigint, number]>;
 
   /**
@@ -144,7 +161,7 @@ export interface IDappStakingService {
    */
   relockUnlockingTokens(senderAddress: string, successMessage: string): Promise<void>;
 
-  unlockTokens(senderAddress: string, amount: number, successMessage: string): Promise<void>;
+  unlockTokens(senderAddress: string, amount: bigint, successMessage: string): Promise<void>;
 
   getStakerInfo(
     address: string,
@@ -152,4 +169,24 @@ export interface IDappStakingService {
   ): Promise<Map<string, SingularStakingInfo>>;
 
   startAccountLedgerSubscription(address: string): Promise<void>;
+
+  getRegisteredContract(developerAddress: string): Promise<string | undefined>;
+
+  getTvl(): Promise<TvlModel>;
+
+  /**
+   * Calculates staker APR for the given block or the current block APR if block number is not provided.
+   * @param block Block number or undefined
+   */
+  getStakerApr(block?: number): Promise<number>;
+
+  /**
+   * Calculates bonus APR for the given block or the current block APR if block number is not provided.
+   * @simulatedVoteAmount Amount of votes to calculate APR with.
+   * @param block Block number or undefined
+   */
+  getBonusApr(
+    simulatedVoteAmount?: number,
+    block?: number
+  ): Promise<{ value: number; simulatedBonusPerPeriod: number }>;
 }

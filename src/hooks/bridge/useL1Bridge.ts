@@ -1,9 +1,9 @@
 import { ethers, constants as ethersConstants } from 'ethers';
-import { debounce } from 'lodash-es'; // If using lodash
+import { debounce } from 'lodash-es';
 import { endpointKey } from 'src/config/chainEndpoints';
 import { LOCAL_STORAGE } from 'src/config/localStorage';
 import { checkAllowance, getTokenBal, setupNetwork } from 'src/config/web3';
-import { useAccount } from 'src/hooks';
+import { useAccount, useNetworkInfo } from 'src/hooks';
 import { Erc20Token } from 'src/modules/token';
 import { astarNativeTokenErcAddr } from 'src/modules/xcm';
 import {
@@ -17,10 +17,13 @@ import { useStore } from 'src/store';
 import { container } from 'src/v2/common';
 import { IZkBridgeService } from 'src/v2/services';
 import { Symbols } from 'src/v2/symbols';
-import { WatchCallback, computed, onUnmounted, ref, watch } from 'vue';
+import { WatchCallback, computed, onUnmounted, ref, watch, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEthProvider } from '../custom-signature/useEthProvider';
 import { EthereumProvider } from '../types/CustomSignature';
+import { Path } from 'src/router';
+import { useRouter } from 'vue-router';
+import { nativeBridgeEnabled } from 'src/features';
 
 const eth = {
   symbol: 'ETH',
@@ -44,7 +47,7 @@ export const useL1Bridge = () => {
     const networkIdxStore = String(localStorage.getItem(LOCAL_STORAGE.NETWORK_IDX));
     return networkIdxStore === String(endpointKey.ASTAR_ZKEVM)
       ? EthBridgeNetworkName.AstarZk
-      : EthBridgeNetworkName.Zkatana;
+      : EthBridgeNetworkName.Zkyoto;
   });
 
   const zkTokens = ref<ZkToken[]>([]);
@@ -56,8 +59,8 @@ export const useL1Bridge = () => {
   const isGasPayable = ref<boolean | undefined>(undefined);
   const isLoadingGasPayable = ref<boolean>(true);
   const errMsg = ref<string>('');
-  const fromChainName = ref<EthBridgeNetworkName>(l1Network.value);
-  const toChainName = ref<EthBridgeNetworkName>(l2Network.value);
+  const fromChainName = ref<EthBridgeNetworkName>(l2Network.value);
+  const toChainName = ref<EthBridgeNetworkName>(l1Network.value);
   const isApproved = ref<boolean>(false);
   const isApproving = ref<boolean>(false);
   const isApproveMaxAmount = ref<boolean>(false);
@@ -77,6 +80,7 @@ export const useL1Bridge = () => {
   const { t } = useI18n();
   const { currentAccount } = useAccount();
   const { web3Provider, ethProvider } = useEthProvider();
+  const router = useRouter();
 
   const isLoading = computed<boolean>(() => store.getters['general/isLoading']);
   const fromChainId = computed<number>(
@@ -149,10 +153,11 @@ export const useL1Bridge = () => {
                 toChainBalance: 0,
                 toChainTokenAddress: it.bridgedTokenAddress,
                 image: it.image,
+                bridgeUrl: it.bridgeUrl,
               }
             : null;
         })
-        .filter((it: Erc20Token) => it !== null);
+        .filter((it: Erc20Token) => it !== null && !it.bridgeUrl);
 
     let tokens = [];
     if (filteredTokens) {
@@ -262,7 +267,7 @@ export const useL1Bridge = () => {
       } else if (providerChainIdRef !== fromChainId.value) {
         errMsg.value = t('warning.selectedInvalidNetworkInWallet');
       } else if (isBalanceNotEnough) {
-        errMsg.value = t('warning.balanceNotEnough');
+        errMsg.value = t('warning.balanceNotEnough', { symbol: 'ETH' });
       } else {
         errMsg.value = '';
       }
@@ -360,7 +365,7 @@ export const useL1Bridge = () => {
   };
 
   const setIsGasPayable = async (): Promise<void> => {
-    if (!bridgeAmt.value || !selectedToken.value.address) return;
+    if (!bridgeAmt.value || !selectedToken.value.address || !isApproved.value) return;
     try {
       isLoadingGasPayable.value = true;
       const zkBridgeService = container.get<IZkBridgeService>(Symbols.ZkBridgeService);
@@ -401,7 +406,7 @@ export const useL1Bridge = () => {
     immediate: true,
   });
 
-  watch([bridgeAmt], debouncedSetIsGasPayable, {
+  watch([bridgeAmt, isApproved], debouncedSetIsGasPayable, {
     immediate: false,
   });
 
@@ -415,6 +420,13 @@ export const useL1Bridge = () => {
     },
     isApproving.value ? 5 : 30 * 1000
   );
+
+  // Memo: the app goes to assets page if users access to the bridge page by inputting URL directly
+  watchEffect(() => {
+    if (!nativeBridgeEnabled) {
+      router.push(Path.Assets);
+    }
+  });
 
   onUnmounted(() => {
     clearInterval(autoFetchAllowanceHandler);

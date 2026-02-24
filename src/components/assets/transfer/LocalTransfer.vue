@@ -97,6 +97,7 @@
               placeholder="0"
               class="input--amount input--no-spin"
               @input="inputHandler"
+              @wheel="(e) => e.preventDefault()"
             />
           </div>
         </div>
@@ -165,7 +166,7 @@
                 </li>
                 <li v-if="!isSupportAuTransfer">
                   <span>
-                    {{ $t('assets.modals.cannotBeSentErc20', { network: currentNetworkName }) }}
+                    {{ $t('assets.modals.cannotBeSentErc20', { network: networkNameSubstrate }) }}
                   </span>
                 </li>
                 <li>
@@ -228,7 +229,7 @@ export default defineComponent({
   setup(props) {
     const { iconWallet } = useWalletIcon();
     const { currentAccount, currentAccountName, multisig, isLockdropAccount } = useAccount();
-    const { nativeTokenSymbol, currentNetworkName, isSupportAuTransfer, isZkEvm } =
+    const { nativeTokenSymbol, networkNameSubstrate, isSupportAuTransfer, isZkEvm } =
       useNetworkInfo();
     const t = computed<Asset>(() => props.token);
     const {
@@ -284,7 +285,7 @@ export default defineComponent({
       isNativeToEvm,
       multisig,
       isZkEvm,
-      currentNetworkName,
+      networkNameSubstrate,
       isSupportAuTransfer,
       isLockdropAccount,
       isValidEvmAddress,

@@ -3,6 +3,7 @@ import {
   AccountLedger,
   Constants,
   ContractStakeAmount,
+  DAppTier,
   DAppTierRewards,
   Dapp,
   DappBase,
@@ -10,7 +11,6 @@ import {
   EraInfo,
   EraLengths,
   EraRewardSpan,
-  InflationParam,
   PeriodEndInfo,
   ProtocolState,
   SingularStakingInfo,
@@ -32,15 +32,16 @@ export interface IDappStakingRepository {
    * Gets dapp data for the given network and dapp address.
    * @param network Network name
    * @param dappAddress dApp address
+   * @param forEdit Flag to indicate if dapp data should be fetched with encoded images.
    * @returns A promise that resolves to a dapp data.
    */
-  getDapp(network: string, dappAddress: string): Promise<Dapp>;
+  getDapp(network: string, dappAddress: string, forEdit?: boolean): Promise<Dapp | undefined>;
 
   /**
    * Gets protocol state for the given network.
    * @param network The network to get protocol state for.
    */
-  getProtocolState(): Promise<ProtocolState>;
+  getProtocolState(block?: number): Promise<ProtocolState>;
 
   /**
    * Starts subscription to protocol state, so UI gets automatically updated when it changes.
@@ -83,14 +84,26 @@ export interface IDappStakingRepository {
    * @param contractAddress Address of the contract to be staked to.
    * @param amount Staking amount.
    */
-  getStakeCall(contractAddress: string, amount: number): Promise<ExtrinsicPayload>;
+  getStakeCall(contractAddress: string, amount: bigint): Promise<ExtrinsicPayload>;
+
+  /**
+   * Gets move stake call. Tokens needs to be locked in order to be staked.
+   * @param fromContractAddress Address of the contract to move stake from.
+   * @param toContractAddress Address of the contract to move stakes on.
+   * @param amount Amount to move, lower or equal than total stake amount.
+   */
+  getMoveStakeCall(
+    fromContractAddress: string,
+    toContractAddress: string,
+    amount: bigint
+  ): Promise<ExtrinsicPayload>;
 
   /**
    * Gets unstake call.
    * @param contractAddress Address of the contract to be unstaked from.
    * @param amount Unstaking amount.
    */
-  getUnstakeCall(contractAddress: string, amount: number): Promise<ExtrinsicPayload>;
+  getUnstakeCall(contractAddress: string, amount: bigint): Promise<ExtrinsicPayload>;
 
   /**
    * Gets unstake from unregistered contract call.
@@ -102,14 +115,14 @@ export interface IDappStakingRepository {
    * Gets unlock call.
    * @param amount Amount of tokens to unlock.
    */
-  getUnlockCall(amount: number): Promise<ExtrinsicPayload>;
+  getUnlockCall(amount: bigint): Promise<ExtrinsicPayload>;
 
   /**
    * Gets batch call made of unstake and unlock calls.
    * @param contractAddress Address of the contract to be staked to.
    * @param amount Staking amount.
    */
-  getUnstakeAndUnlockCalls(contractAddress: string, amount: number): Promise<ExtrinsicPayload[]>;
+  getUnstakeAndUnlockCalls(contractAddress: string, amount: bigint): Promise<ExtrinsicPayload[]>;
 
   /**
    * Gets claim staker rewards batch call. Situations when multiple claim staker call are required
@@ -185,13 +198,20 @@ export interface IDappStakingRepository {
    * Gets the current era information.
    * @returns A promise that resolves to the era info.
    */
-  getCurrentEraInfo(): Promise<EraInfo>;
+  getCurrentEraInfo(block?: number): Promise<EraInfo>;
 
   /**
    * Gets the contract staking info.
    * @param dappId Dapp id to get staking info for.
    */
   getContractStake(dappId: number): Promise<ContractStakeAmount>;
+
+  /**
+   * Gets the contract staking info for multiple dapps.
+   * @param dappIds Dapp id to get staking info for.
+   * @param block Block number to get the data for or undefined to get data for the current block.
+   */
+  getContractsStake(dappIds: number[], block?: number): Promise<Map<number, ContractStakeAmount>>;
 
   /**
    * Gets a call to claim all fully unlocked chunks.
@@ -205,14 +225,14 @@ export interface IDappStakingRepository {
 
   getTiersConfiguration(): Promise<TiersConfiguration>;
 
-  getEraLengths(): Promise<EraLengths>;
+  getEraLengths(block?: number): Promise<EraLengths>;
 
   getCleanupExpiredEntriesCall(): Promise<ExtrinsicPayload>;
 
   /**
    * Gets dApps tier assignment map.
    */
-  getLeaderboard(): Promise<Map<number, number>>;
+  getLeaderboard(): Promise<Map<number, DAppTier>>;
 
   /**
    * Gets a call to the legacy code to support v2 ledger stakers to unlock their funds.
@@ -223,4 +243,6 @@ export interface IDappStakingRepository {
    * Gets a call to the legacy code to support v2 ledger stakers to withdraw their funds.
    */
   getWithdrawUnbondedCall(): Promise<ExtrinsicPayload>;
+
+  getRegisterDappCall(developerAddress: string, dappAddress: string): Promise<ExtrinsicPayload>;
 }

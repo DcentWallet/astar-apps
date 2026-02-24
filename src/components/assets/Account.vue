@@ -5,7 +5,7 @@
         <div class="account-bg" :style="{ backgroundImage: `url(${bg})` }" />
 
         <div class="wallet-tab">
-          <div v-if="isLockdropAccount && isAllowLockdropDispatch" class="row--lockdrop">
+          <div v-if="isLockdropAccount" class="row--lockdrop">
             <span>{{ $t('assets.lockdropAccount') }}</span>
             <span class="text--switch-account" @click="toggleEvmWalletSchema">
               {{ $t(isH160 ? 'assets.switchToNative' : 'assets.switchToEvm') }}
@@ -13,44 +13,17 @@
           </div>
           <div v-else />
           <div class="wallet-tab__bg">
-            <template v-if="isH160">
-              <template v-if="isZkEvm">
-                <template v-if="currentNetworkIdx === endpointKey.ASTAR_ZKEVM">
-                  <a class="btn" href="/astar/assets"> Astar EVM (L1) </a>
-                  <div class="btn active">Astar zkEVM</div>
-                </template>
-                <template v-if="currentNetworkIdx === endpointKey.ZKATANA">
-                  <a class="btn" href="/shibuya-testnet/assets"> Shibuya EVM (L1) </a>
-                  <div class="btn active">Astar zKatana</div>
-                </template>
-              </template>
-
-              <template v-else>
-                <div class="btn active">
-                  {{ currentNetworkName.replace('Network', '') }}
-                  EVM (L1)
-                </div>
-                <a
-                  v-if="currentNetworkIdx === endpointKey.SHIBUYA"
-                  class="btn"
-                  href="/zkatana-testnet/assets"
-                >
-                  Astar zKatana
-                </a>
-                <a
-                  v-else-if="currentNetworkIdx === endpointKey.ASTAR"
-                  href="/astar-zkevm/assets"
-                  class="btn"
-                >
-                  Astar zkEVM
-                </a>
-              </template>
-            </template>
+            <div v-if="isH160">
+              <div class="btn active">
+                {{ currentNetworkName.replace('Network', '') }}
+                EVM (L1)
+              </div>
+            </div>
 
             <!-- Native -->
             <div v-else class="btn active">
               {{
-                currentNetworkIdx === endpointKey.ZKATANA
+                currentNetworkIdx === endpointKey.ZKYOTO
                   ? 'Astar'
                   : currentNetworkName.replace('Network', '')
               }}
@@ -72,7 +45,7 @@
                 width="24"
                 :src="iconWallet"
                 alt="wallet-icon"
-                :class="multisig && 'img--polkasafe'"
+                :class="multisig && 'img--polkasafe-account'"
               />
             </div>
 
@@ -145,7 +118,7 @@
 </template>
 <script lang="ts">
 import { getShortenAddress, isValidEvmAddress, wait } from '@astar-network/astar-sdk-core';
-import { FrameSystemAccountInfo } from '@polkadot/types/lookup';
+import { FrameSystemAccountInfo } from 'src/v2/repositories/implementations';
 import copy from 'copy-to-clipboard';
 import { ethers } from 'ethers';
 import { $api } from 'src/boot/api';
@@ -154,7 +127,6 @@ import AuIcon from 'src/components/header/modals/account-unification/AuIcon.vue'
 import { endpointKey, providerEndpoints } from 'src/config/chainEndpoints';
 import { SupportWallet, supportWalletObj } from 'src/config/wallets';
 import {
-  ETHEREUM_EXTENSION,
   useAccount,
   useAccountUnification,
   useBalance,
@@ -162,6 +134,7 @@ import {
   useNetworkInfo,
   useWalletIcon,
 } from 'src/hooks';
+import { ETHEREUM_EXTENSION } from 'src/modules/account';
 import { useEvmAccount } from 'src/hooks/custom-signature/useEvmAccount';
 import { getEvmMappedSs58Address, setAddressMapping } from 'src/hooks/helper/addressUtils';
 import { useDappStaking } from 'src/staking-v3';
@@ -218,7 +191,7 @@ export default defineComponent({
     const isH160 = computed<boolean>(() => store.getters['general/isH160Formatted']);
     const isEthWallet = computed<boolean>(() => store.getters['general/isEthWallet']);
 
-    const { currentNetworkIdx, isZkEvm, isAllowLockdropDispatch } = useNetworkInfo();
+    const { currentNetworkIdx } = useNetworkInfo();
 
     const isWalletConnect = computed<boolean>(() => {
       const currentWallet = store.getters['general/currentWallet'];
@@ -233,9 +206,10 @@ export default defineComponent({
       () => `${providerEndpoints[currentNetworkIdx.value].subscan}/account/${currentAccount.value}`
     );
 
-    const totalBal = computed<number>(
-      () => Number(balUsd.value) + props.ttlErc20Amount + props.ttlNativeXcmUsdAmount
-    );
+    const totalBal = computed<number>(() => {
+      const addAmount = isH160.value ? props.ttlErc20Amount : props.ttlNativeXcmUsdAmount;
+      return Number(balUsd.value) + addAmount;
+    });
 
     const signatoryIconWallet = computed<string>(() => {
       // @ts-ignore
@@ -260,11 +234,10 @@ export default defineComponent({
     };
 
     watch(
-      [balance, props, currentAccount, ledger, isZkEvm],
+      [balance, props, currentAccount, ledger],
       () => {
         balUsd.value = null;
-        const h160LockedBal =
-          isZkEvm.value || !isH160.value ? '0' : String(ledger?.value?.locked.toString());
+        const h160LockedBal = !isH160.value ? '0' : String(ledger?.value?.locked.toString());
         if (!balance.value || !props.nativeTokenUsd) return;
 
         const bal =
@@ -362,13 +335,11 @@ export default defineComponent({
       isAccountUnification,
       unifiedAccount,
       isAccountUnified,
-      isZkEvm,
       bg,
       currentNetworkIdx,
       currentNetworkName,
       isLockdropAccount,
       isModalLockdropWarning,
-      isAllowLockdropDispatch,
       isWalletConnect,
       endpointKey,
       handleModalLockdropWarning,

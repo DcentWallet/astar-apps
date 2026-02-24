@@ -21,7 +21,6 @@
               :set-custom-endpoint="setCustomEndpoint"
               :set-is-network="setIsNetwork"
               :check-is-checked-endpoint="checkIsCheckedEndpoint"
-              :is-zk-evm="isZkEvm"
               :is-select-light-client="isSelectLightClient"
               :is-light-client-extension="isLightClientExtension"
               :is-disabled="isDisabled"
@@ -59,7 +58,6 @@
               :selected-wallet="(selectedWallet as SupportWallet)"
               :select-network="selectNetwork"
               :sel-network-id="selNetworkId"
-              :is-zk-evm="isZkEvm"
               :is-animated-in="isAnimatedIn"
             />
           </div>
@@ -87,7 +85,6 @@ import SelectAccount from './SelectAccount.vue';
 import SelectMultisigAccount from './SelectMultisigAccount.vue';
 import SelectNetwork from './SelectNetwork.vue';
 import SelectWallet from './SelectWallet.vue';
-import Ads from './Ads.vue';
 
 export default defineComponent({
   components: {
@@ -168,7 +165,7 @@ export default defineComponent({
     const selEndpointShiden = ref<string>('');
     const selEndpointShibuya = ref<string>('');
     const selEndpointAstarZkevm = ref<string>('');
-    const selEndpointZkatana = ref<string>('');
+    const selEndpointZkyoto = ref<string>('');
 
     const setIsAnimatedIn = (result: boolean): void => {
       isAnimatedIn.value = result;
@@ -182,10 +179,6 @@ export default defineComponent({
 
     const isLightClientExtension = computed<boolean>(() => checkIsSubstrateConnectInstalled());
     const isH160 = computed<boolean>(() => store.getters['general/isH160Formatted']);
-    const isZkEvm = computed<boolean>(
-      () =>
-        selNetworkId.value === endpointKey.ASTAR_ZKEVM || selNetworkId.value === endpointKey.ZKATANA
-    );
 
     const setInitialCustomEndpoint = (): string => {
       const selectedEndpointStored = String(localStorage.getItem(SELECTED_ENDPOINT));
@@ -219,8 +212,8 @@ export default defineComponent({
           return selEndpointShiden.value;
         case endpointKey.SHIBUYA:
           return selEndpointShibuya.value;
-        case endpointKey.ZKATANA:
-          return selEndpointZkatana.value;
+        case endpointKey.ZKYOTO:
+          return selEndpointZkyoto.value;
         case endpointKey.ASTAR_ZKEVM:
           return selEndpointAstarZkevm.value;
 
@@ -255,7 +248,7 @@ export default defineComponent({
       // Memo: zkEVM configuration is using substrate API to fetch the dApp staking information
       // that's why `isEndpointChange` returns fails in `isChangeNetwork` variable
       const isSwitchBetweenZkEvmTestnet =
-        networkIdxRef === endpointKey.SHIBUYA && currentNetworkIdx.value === endpointKey.ZKATANA;
+        networkIdxRef === endpointKey.SHIBUYA && currentNetworkIdx.value === endpointKey.ZKYOTO;
       const isSwitchBetweenZkEvmMainnet =
         networkIdxRef === endpointKey.ASTAR && currentNetworkIdx.value === endpointKey.ASTAR_ZKEVM;
 
@@ -298,9 +291,6 @@ export default defineComponent({
       if (selNetworkId.value === endpointKey.CUSTOM && !customEndpoint.value) {
         return true;
       }
-      if (isZkEvm.value && !isH160.value) {
-        return true;
-      }
 
       return false;
     });
@@ -333,7 +323,7 @@ export default defineComponent({
         ? selEndpointShibuya.value === endpoint
         : index === endpointKey.ASTAR_ZKEVM
         ? selEndpointAstarZkevm.value === endpoint
-        : selEndpointZkatana.value === endpoint;
+        : selEndpointZkyoto.value === endpoint;
     };
 
     const setSelNetwork = (networkId: number): void => {
@@ -355,8 +345,8 @@ export default defineComponent({
         selEndpointShibuya.value = endpointObj.endpoint;
       } else if (networkIdx === endpointKey.ASTAR_ZKEVM) {
         selEndpointAstarZkevm.value = endpointObj.endpoint;
-      } else if (networkIdx === endpointKey.ZKATANA) {
-        selEndpointZkatana.value = endpointObj.endpoint;
+      } else if (networkIdx === endpointKey.ZKYOTO) {
+        selEndpointZkyoto.value = endpointObj.endpoint;
       }
     };
 
@@ -380,8 +370,8 @@ export default defineComponent({
       if (networkIdx === endpointKey.ASTAR_ZKEVM) {
         selEndpointAstarZkevm.value = getRandomizedEndpoint(endpointKey.ASTAR_ZKEVM);
       }
-      if (networkIdx === endpointKey.ZKATANA) {
-        selEndpointZkatana.value = getRandomizedEndpoint(endpointKey.ZKATANA);
+      if (networkIdx === endpointKey.ZKYOTO) {
+        selEndpointZkyoto.value = getRandomizedEndpoint(endpointKey.ZKYOTO);
       }
     };
 
@@ -391,7 +381,7 @@ export default defineComponent({
         randomizedEndpoint(endpointKey.SHIDEN);
         randomizedEndpoint(endpointKey.SHIBUYA);
         randomizedEndpoint(endpointKey.ASTAR_ZKEVM);
-        randomizedEndpoint(endpointKey.ZKATANA);
+        randomizedEndpoint(endpointKey.ZKYOTO);
         return;
       }
 
@@ -400,7 +390,7 @@ export default defineComponent({
         randomizedEndpoint(endpointKey.ASTAR);
         randomizedEndpoint(endpointKey.SHIBUYA);
         randomizedEndpoint(endpointKey.ASTAR_ZKEVM);
-        randomizedEndpoint(endpointKey.ZKATANA);
+        randomizedEndpoint(endpointKey.ZKYOTO);
         return;
       }
 
@@ -409,7 +399,7 @@ export default defineComponent({
         randomizedEndpoint(endpointKey.ASTAR);
         randomizedEndpoint(endpointKey.SHIDEN);
         randomizedEndpoint(endpointKey.ASTAR_ZKEVM);
-        randomizedEndpoint(endpointKey.ZKATANA);
+        randomizedEndpoint(endpointKey.ZKYOTO);
         return;
       }
       if (networkIdx === endpointKey.ASTAR_ZKEVM) {
@@ -417,10 +407,10 @@ export default defineComponent({
         randomizedEndpoint(endpointKey.ASTAR);
         randomizedEndpoint(endpointKey.SHIDEN);
         randomizedEndpoint(endpointKey.SHIBUYA);
-        randomizedEndpoint(endpointKey.ZKATANA);
+        randomizedEndpoint(endpointKey.ZKYOTO);
         return;
       }
-      if (networkIdx === endpointKey.ZKATANA) {
+      if (networkIdx === endpointKey.ZKYOTO) {
         selEndpointShibuya.value = setInitialSelEndpoint();
         randomizedEndpoint(endpointKey.ASTAR);
         randomizedEndpoint(endpointKey.SHIDEN);
@@ -432,7 +422,7 @@ export default defineComponent({
         randomizedEndpoint(endpointKey.ASTAR);
         randomizedEndpoint(endpointKey.SHIDEN);
         randomizedEndpoint(endpointKey.SHIBUYA);
-        randomizedEndpoint(endpointKey.ZKATANA);
+        randomizedEndpoint(endpointKey.ZKYOTO);
         randomizedEndpoint(endpointKey.ASTAR_ZKEVM);
         return;
       }
@@ -455,7 +445,6 @@ export default defineComponent({
       endpointKey,
       isSelectLightClient,
       isLightClientExtension,
-      isZkEvm,
       isDisabled,
       SupportWallet,
       WalletModalOption,

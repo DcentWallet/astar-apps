@@ -1,4 +1,5 @@
 import { TypedDataDomain, TypedDataField } from '@ethersproject/abstract-signer';
+import { stringToU8a } from '@polkadot/util';
 import { ethers } from 'ethers';
 import { inject, injectable } from 'inversify';
 import { handleCheckProviderChainId } from 'src/config/web3';
@@ -78,6 +79,11 @@ export class MetamaskWalletService extends WalletService implements IWalletServi
     try {
       return new Promise<string>(async (resolve) => {
         const web3 = new Web3(this.provider as any);
+        const resultCheckProvider = await handleCheckProviderChainId(this.provider);
+        if (!resultCheckProvider) {
+          throw Error('Please connect to the correct network in your wallet');
+        }
+
         const accounts = await web3.eth.getAccounts();
         const h160Address = accounts[0];
 
@@ -118,6 +124,8 @@ export class MetamaskWalletService extends WalletService implements IWalletServi
           }
         }
 
+        const contractAddress = evmPrecompiledContract.lockdropDispatch;
+
         const hexEncodedCall = extrinsic.method.toHex();
         const msg = 'Signing transaction for hex-encoded call: ' + hexEncodedCall;
         const signature = (await this.provider.request({
@@ -126,10 +134,7 @@ export class MetamaskWalletService extends WalletService implements IWalletServi
         })) as string;
         const { uncompressedPubKey } = utils.recoverPublicKeyFromSig(h160Address, msg, signature);
 
-        const contract = new web3.eth.Contract(
-          lockdropDispatchAbi as AbiItem[],
-          evmPrecompiledContract.lockdropDispatch
-        );
+        const contract = new web3.eth.Contract(lockdropDispatchAbi as AbiItem[], contractAddress);
 
         const data = contract.methods
           .dispatch_lockdrop_call(hexEncodedCall, uncompressedPubKey)
@@ -137,7 +142,7 @@ export class MetamaskWalletService extends WalletService implements IWalletServi
 
         const hash = await this.sendEvmTransaction({
           from: h160Address,
-          to: evmPrecompiledContract.lockdropDispatch,
+          to: contractAddress,
           data,
           successMessage,
         });
@@ -173,10 +178,13 @@ export class MetamaskWalletService extends WalletService implements IWalletServi
       const rawTx = await getRawEvmTransaction(web3, from, to, data, value);
 
       // Memo: passing this variable (estimatedGas) to `sendTransaction({gas: estimatedGas})` causes an error when sending `withdrawal` transactions.
-      // the function goes the catch statement if something goes wrong while getting the estimatedGas. This way, the UI prevents sending invalid transactions which could cause loss of assets.
+      // 20/6/2025: Tested with `withdrawal` transaction on Shibuya and it works fine.
       const estimatedGas = await web3.eth.estimateGas(rawTx);
+      const estimatedGasBigInt = BigInt(estimatedGas);
+      // Memo: Adding 20% to the estimated gas to avoid out of gas errors
+      const gasLimit = estimatedGasBigInt + estimatedGasBigInt / BigInt(5);
       const transactionHash = await web3.eth
-        .sendTransaction({ ...rawTx })
+        .sendTransaction({ ...rawTx, gas: gasLimit.toString() })
         .once('transactionHash', (transactionHash) => {
           this.eventAggregator.publish(new BusyMessage(true));
         })
@@ -227,6 +235,14 @@ export class MetamaskWalletService extends WalletService implements IWalletServi
     const provider = new ethers.providers.Web3Provider(this.provider);
     const signer = provider.getSigner();
     const signature = await signer._signTypedData(domain, types, value);
+
+    return signature;
+  }
+
+  public async signMessage(signerAddress: string, message: string): Promise<string> {
+    const provider = new ethers.providers.Web3Provider(this.provider);
+    const signer = provider.getSigner();
+    const signature = await signer.signMessage(stringToU8a(message));
 
     return signature;
   }

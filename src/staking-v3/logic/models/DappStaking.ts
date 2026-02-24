@@ -1,5 +1,6 @@
+import { SocialIcon } from '@astar-network/astar-ui';
 import { DappInfo, DappState, ProtocolState } from './Node';
-import { Community } from '@astar-network/astar-sdk-core';
+import { Community, DappItem } from '@astar-network/astar-sdk-core';
 
 /**
  * Dapp model containing the basic information so dApps can be displayed on the homepage.
@@ -47,7 +48,7 @@ export class AccountLedgerChangedMessage {
 export interface DappStakeInfo {
   id: number;
   address: string;
-  amount: number;
+  amount: bigint;
 }
 
 /**
@@ -94,7 +95,9 @@ export interface AccountLedger {
 
 export interface SingularStakingInfo {
   readonly staked: StakeAmount;
+  readonly previousStaked: StakeAmount;
   readonly loyalStaker: boolean;
+  readonly bonusStatus: number;
 }
 
 export interface PeriodEndInfo {
@@ -125,6 +128,7 @@ export interface Constants {
   maxNumberOfContracts: number;
   maxUnlockingChunks: number;
   unlockingPeriod: number;
+  maxBonusSafeMovesPerPeriod: number;
 }
 
 export interface EraLengths {
@@ -138,11 +142,13 @@ export interface DAppTierRewards {
   readonly dapps: DAppTier[];
   readonly rewards: bigint[];
   readonly period: number;
+  readonly rankRewards: bigint[];
 }
 
 export interface DAppTier {
   readonly dappId: number;
-  readonly tierId: number | undefined;
+  readonly tierId: number;
+  readonly rank: number;
 }
 
 export interface Rewards {
@@ -152,7 +158,6 @@ export interface Rewards {
 }
 
 export interface EraInfo {
-  readonly activeEraLocked?: bigint;
   readonly totalLocked: bigint;
   readonly unlocking: bigint;
   readonly currentStakeAmount: StakeAmount;
@@ -170,20 +175,18 @@ export interface TiersConfiguration {
   readonly numberOfSlots: number;
   readonly slotsPerTier: number[];
   readonly rewardPortion: number[];
-  readonly tierThresholds: TierThreshold[];
-}
-
-interface TierThreshold {
-  readonly amount: BigInt;
-  readonly minimumAmount?: BigInt;
-  readonly type: TvlAmountType;
+  readonly tierThresholds: bigint[];
 }
 
 export interface InflationParam {
-  readonly maxInflationRate: string;
-  readonly adjustableStakersPart: string;
-  readonly baseStakersPart: string;
-  readonly idealStakingRate: string;
+  readonly maxInflationRate: number;
+  readonly treasuryPart: number;
+  readonly collatorsPart: number;
+  readonly dappsPart: number;
+  readonly baseStakersPart: number;
+  readonly adjustableStakersPart: number;
+  readonly bonusPart: number;
+  readonly idealStakingRate: number;
 }
 
 export enum TvlAmountType {
@@ -216,4 +219,68 @@ export interface StakerRewards {
   amount: bigint;
   period: number;
   eraCount: number;
+}
+
+export type BonusRewards = {
+  amount: bigint;
+  contractsToClaim: Map<string, bigint>;
+};
+
+export type DappVote = {
+  name: string;
+  address: string;
+  logoUrl: string;
+  amount: number;
+  id: number;
+  mainCategory?: string;
+  stakeAmount?: bigint;
+};
+
+export const mapToDappVote = (dapp: CombinedDappInfo): DappVote => ({
+  name: dapp.basic.name,
+  address: dapp.chain.address,
+  logoUrl: dapp.basic.iconUrl,
+  amount: 0,
+  id: dapp.chain.id,
+  mainCategory: dapp.basic.mainCategory,
+  stakeAmount: dapp.chain.totalStake,
+});
+
+export type DappRegistrationParameters = {
+  dapp: NewDappItem;
+  senderAddress: string;
+  signature: string;
+  network: string;
+};
+
+export interface NewDappItem extends DappItem {
+  iconFileName: string;
+  iconFile: string;
+  icon: File;
+  images: File[];
+  imagesContent: string[];
+  videoUrlInput: string;
+}
+
+export interface EditDappItem extends DappItem {
+  iconFile: FileInfo;
+  images: FileInfo[];
+}
+
+export type FileInfo = {
+  name: string;
+  base64content: string;
+  contentType: string;
+};
+
+export interface CommunityDefinition extends Community {
+  iconName: SocialIcon;
+  label: string;
+  validateHandle?: (v: string) => boolean | string;
+}
+
+export enum ClaimType {
+  Staker,
+  Bonus,
+  Both,
 }

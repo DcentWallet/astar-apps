@@ -37,7 +37,7 @@
     position: relative;
     z-index: 1;
   }
-  iframe {
+  #iframe {
     position: absolute;
     z-index: 0;
     transform-origin: top left;
@@ -63,5 +63,17 @@
       font-size: 16px;
       border-radius: 16px;
     }
+  }
+}
+
+.unit {
+  font-size: 16px;
+}
+
+.text--link {
+  color: $astar-blue-dark;
+  text-transform: lowercase;
+  &:hover {
+    color: lighten($astar-blue-dark, 15%);
   }
 }

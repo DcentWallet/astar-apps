@@ -13,6 +13,7 @@ import { XcmRepository } from '../XcmRepository';
  */
 export class AstarXcmRepository extends XcmRepository {
   private astarNativeTokenId;
+  protected readonly xcmVersion = 'V5';
 
   constructor() {
     const defaultApi = container.get<IApi>(Symbols.DefaultApi);
@@ -39,18 +40,14 @@ export class AstarXcmRepository extends XcmRepository {
     const isWithdrawAssets = token.id !== this.astarNativeTokenId;
 
     const asset = isWithdrawAssets
-      ? {
-          Concrete: await this.fetchAssetConfig(from, token, endpoint),
-        }
+      ? await this.fetchAssetConfig(from, token, endpoint)
       : {
-          Concrete: {
-            interior: 'Here',
-            parents: new BN(0),
-          },
+          interior: 'Here',
+          parents: new BN(0),
         };
 
     const assets = {
-      V3: {
+      [this.xcmVersion]: {
         fun: {
           Fungible: new BN(amount),
         },
@@ -73,7 +70,7 @@ export class AstarXcmRepository extends XcmRepository {
         };
 
     const destination = {
-      V3: {
+      [this.xcmVersion]: {
         interior: {
           X2: [
             {
@@ -91,6 +88,37 @@ export class AstarXcmRepository extends XcmRepository {
     const weightLimit = {
       Unlimited: null,
     };
+
+    const feeAssetInformation = this.getFeeInformation(token, from, to);
+
+    if (feeAssetInformation.feeAssetIsRequired) {
+      // we need to use another token for the fee
+      const fee = {
+        [this.xcmVersion]: {
+          fun: {
+            Fungible: new BN(feeAssetInformation.feeAmount),
+          },
+          id: {
+            Concrete: await this.fetchAssetConfigById(
+              from,
+              feeAssetInformation.feeAssetId,
+              endpoint
+            ),
+          },
+        },
+      };
+
+      return await this.buildTxCall(
+        from,
+        endpoint,
+        'xTokens',
+        'transferMultiassetWithFee',
+        assets,
+        fee,
+        destination,
+        weightLimit
+      );
+    }
 
     return await this.buildTxCall(
       from,

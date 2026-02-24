@@ -5,11 +5,12 @@
     </template>
     <div class="wrapper--dashboard-layout__inner">
       <portal-header />
-      <yoki-banner :network="currentNetworkIdx" />
+      <!-- <under-maintenance-banner /> -->
+      <snap-deprecated-banner />
+      <dapp-staking-banner />
       <main id="assets-top" class="wrapper--main">
         <div class="wrapper--components">
           <div class="page-bg" :style="{ backgroundImage: `url(${bg})` }" />
-
           <slot />
         </div>
       </main>
@@ -25,14 +26,16 @@ import SidebarDesktop from 'components/sidenav/SidebarDesktop.vue';
 import { useQuasar } from 'quasar';
 import { LOCAL_STORAGE } from 'src/config/localStorage';
 import { useStore } from 'src/store';
-import ClaimWarningBanner from 'src/components/header/ClaimWarningBanner.vue';
-import YokiBanner from 'src/components/header/YokiBanner.vue';
+import UnderMaintenanceBanner from 'src/components/header/UnderMaintenanceBanner.vue';
+import DappStakingBanner from 'src/components/header/DappStakingBanner.vue';
+import SnapDeprecatedBanner from 'src/components/header/SnapDeprecatedBanner.vue';
 
 export default defineComponent({
   components: {
     PortalHeader,
     SidebarDesktop,
-    YokiBanner,
+    DappStakingBanner,
+    SnapDeprecatedBanner,
   },
   setup() {
     const store = useStore();

@@ -4,176 +4,158 @@
       <div class="container--title">
         <span>{{ $t('bridge.selectBridge') }}</span>
       </div>
-      <div class="container--selection">
+      <div class="container--bridges">
         <div class="column--selection">
-          <button :disabled="!isEnableEthBridge">
+          <button :disabled="!isEnableCcipBridge">
             <component
-              :is="isEnableEthBridge ? 'router-link' : 'div'"
-              :to="buildEthereumBridgePageLink()"
+              :is="isEnableCcipBridge ? 'router-link' : 'div'"
+              :to="ccipSoneiumLink"
               class="button--bridge"
             >
               <div class="row--logo-bg">
-                <div class="img--logo-bg">
+                <div class="img--logo-bg box--ethereum-soneium">
                   <img
                     class="img--logo"
-                    :src="require('src/assets/img/ethereum.png')"
+                    :src="require('src/assets/img/chain/ethereum-gray.svg')"
                     alt="ethereum"
                   />
+                </div>
+                <div class="box-soneium-logo">
+                  <div class="img--logo-bg">
+                    <img
+                      class="img--logo-soneium"
+                      :src="require('src/assets/img/chain/soneium-color.svg')"
+                      alt="soneium"
+                    />
+                  </div>
                 </div>
               </div>
               <div class="row--bridge-title">
                 <div class="text--bridge-tag">
                   <q-chip outline>
-                    {{ $t('bridge.ethereumBridge.tag') }}
+                    {{
+                      $t(isShibuyaEvm ? 'bridge.ccipSbyBridge.tag' : 'bridge.ccipAstrBridge.tag')
+                    }}
                   </q-chip>
                 </div>
-                <span class="text--bridge-title">{{ $t('bridge.ethereumBridge.title') }}</span>
+                <span class="text--bridge-title">{{
+                  $t(isShibuyaEvm ? 'bridge.ccipSbyBridge.title' : 'bridge.ccipAstrBridge.title')
+                }}</span>
                 <div class="box--text-bridge">
                   <span class="text--bridge">
-                    {{ $t('bridge.ethereumBridge.text', { l1: l1Name, l2: l2Name }) }}
+                    {{
+                      $t(isShibuyaEvm ? 'bridge.ccipSbyBridge.text' : 'bridge.ccipAstrBridge.text')
+                    }}
                   </span>
                 </div>
               </div>
             </component>
           </button>
-          <p v-if="!isEnableEthBridge" class="text--bridge-details">
-            {{ $t('bridge.ethereumBridge.text2') }}
+          <p v-if="!isAstarEvm && !isShibuyaEvm" class="text--bridge-details">
+            {{ $t('bridge.ccipAstrBridge.remark') }}
           </p>
         </div>
 
         <div class="column--selection">
           <button>
-            <a :href="stargateUrl" target="_blank" rel="noopener noreferrer" class="button--bridge">
-              <div class="row--logo-bg">
-                <div class="img--logo-bg">
-                  <img
-                    class="img--logo"
-                    :src="require('src/assets/img/layerzero_bridge_logo.svg')"
-                    alt="astar-bridge"
-                  />
-                </div>
-              </div>
-              <div class="row--bridge-title">
-                <div class="text--bridge-tag">
-                  <q-chip outline>
-                    {{ $t('bridge.astarBridge.tag') }}
-                  </q-chip>
-                </div>
-                <span class="text--bridge-title">{{ $t('bridge.astarBridge.title') }}</span>
-                <div class="box--text-bridge">
-                  <span class="text--bridge">
-                    {{ $t('bridge.astarBridge.text') }}
-                  </span>
-                </div>
-              </div>
-            </a>
-          </button>
-        </div>
-      </div>
-      <div class="container--selection">
-        <div class="column--selection">
-          <button>
-            <a
-              :href="layerSwapLink"
-              target="_blank"
-              rel="noopener noreferrer"
+            <component
+              :is="true ? 'router-link' : 'div'"
+              :to="buildTransferPageLink(nativeTokenSymbol)"
               class="button--bridge"
             >
               <div class="row--logo-bg">
                 <div class="img--logo-bg">
                   <img
-                    class="img--logo"
-                    :src="require('src/assets/img/layerswap_logo.svg')"
-                    alt="relay-link"
+                    class="img--logo-soneium"
+                    :src="require('src/assets/img/astar_icon2.svg')"
+                    alt="astar"
                   />
                 </div>
               </div>
               <div class="row--bridge-title">
                 <div class="text--bridge-tag">
                   <q-chip outline>
-                    {{ $t('bridge.layerSwap.tag') }}
+                    {{ nativeTokenSymbol }}
                   </q-chip>
                 </div>
-                <span class="text--bridge-title">{{ $t('bridge.layerSwap.title') }}</span>
+                <span class="text--bridge-title">{{ $t('bridge.astarEvmBridge.title') }}</span>
                 <div class="box--text-bridge">
                   <span class="text--bridge">
-                    {{ $t('bridge.layerSwap.text') }}
+                    {{ $t('bridge.astarEvmBridge.text') }}
                   </span>
                 </div>
               </div>
-            </a>
-          </button>
-        </div>
-        <div class="column--selection">
-          <button>
-            <a
-              :href="relayBridgeAppLink"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="button--bridge"
-            >
-              <div class="row--logo-bg">
-                <div class="img--logo-bg">
-                  <img
-                    class="img--logo"
-                    :src="require('src/assets/img/relay_bridge_logo.svg')"
-                    alt="relay-link"
-                  />
-                </div>
-              </div>
-              <div class="row--bridge-title">
-                <div class="text--bridge-tag">
-                  <q-chip outline>
-                    {{ $t('bridge.relayBridge.tag') }}
-                  </q-chip>
-                </div>
-                <span class="text--bridge-title">{{ $t('bridge.relayBridge.title') }}</span>
-                <div class="box--text-bridge">
-                  <span class="text--bridge">
-                    {{ $t('bridge.relayBridge.text', { l1: l1Name, l2: l2Name }) }}
-                  </span>
-                </div>
-              </div>
-            </a>
+            </component>
           </button>
         </div>
 
         <div class="column--selection">
-          <button>
-            <a
-              :href="cbridgeAppLink"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="button--bridge"
-            >
-              <div class="row--logo-bg">
-                <div class="img--logo-bg">
-                  <img
-                    class="img--logo"
-                    :src="require('src/assets/img/cbridge_logo.svg')"
-                    alt="cbridge"
-                  />
-                </div>
+          <button
+            :disabled="!stargateBridgeEnabled"
+            class="button--bridge"
+            @click="navigateInNewTab(stargateBridgeLink)"
+          >
+            <div class="row--logo-bg">
+              <div class="img--logo-bg">
+                <img
+                  class="img--logo-stargate"
+                  :src="require('src/assets/img/logo-stargate.webp')"
+                  alt="stargate"
+                />
               </div>
-              <div class="row--bridge-title">
-                <div class="text--bridge-tag">
-                  <q-chip outline>
-                    {{ $t('bridge.celerBridge.tag') }}
-                  </q-chip>
-                </div>
-                <span class="text--bridge-title">{{ $t('bridge.celerBridge.title') }}</span>
-                <div class="box--text-bridge">
-                  <span class="text--bridge">
-                    {{
-                      $t('bridge.celerBridge.text', {
-                        cbridgeNetworkName,
-                      })
-                    }}
-                  </span>
-                </div>
+            </div>
+            <div class="row--bridge-title">
+              <div class="text--bridge-tag">
+                <q-chip outline>
+                  {{ $t('bridge.stargateBridge.tag') }}
+                </q-chip>
               </div>
-            </a>
+              <span class="text--bridge-title">{{ $t('bridge.stargateBridge.title') }}</span>
+              <div class="box--text-bridge">
+                <span class="text--bridge">
+                  {{ $t('bridge.stargateBridge.text') }}
+                </span>
+              </div>
+            </div>
           </button>
+        </div>
+
+        <div class="column--selection">
+          <button
+            :disabled="!celerBridgeEnabled"
+            class="button--bridge"
+            @click="navigateInNewTab(cbridgeAppLink)"
+          >
+            <div class="row--logo-bg">
+              <div class="img--logo-bg">
+                <img
+                  class="img--logo"
+                  :src="require('src/assets/img/cbridge_logo.svg')"
+                  alt="cbridge"
+                />
+              </div>
+            </div>
+            <div class="row--bridge-title">
+              <div class="text--bridge-tag">
+                <q-chip outline>
+                  {{ $t('bridge.celerBridge.tag') }}
+                </q-chip>
+              </div>
+              <span class="text--bridge-title">{{ $t('bridge.celerBridge.title') }}</span>
+              <div class="box--text-bridge">
+                <span class="text--bridge">
+                  {{
+                    $t('bridge.celerBridge.text', {
+                      cbridgeNetworkName,
+                    })
+                  }}
+                </span>
+              </div>
+            </div>
+          </button>
+          <p v-if="!celerBridgeEnabled" class="text--bridge-details">
+            {{ $t('bridge.celerBridge.warning') }}
+          </p>
         </div>
       </div>
     </div>
@@ -181,35 +163,73 @@
 </template>
 <script lang="ts">
 import { cbridgeAppLink } from 'src/c-bridge';
+import {
+  ccipMinatoBridgeEnabled,
+  celerBridgeEnabled,
+  layerSwapBridgeEnabled,
+  layerZeroBridgeEnabled,
+  ccipSoneiumBridgeEnabled,
+  ccipSepoliaBridgeEnabled,
+  ccipEthereumBridgeEnabled,
+  nativeBridgeEnabled,
+  stargateBridgeEnabled,
+  ccipShibuyaBridgeEnabled,
+  ccipAstarBridgeEnabled,
+} from 'src/features';
 import { useAccount, useNetworkInfo } from 'src/hooks';
 import { EthBridgeNetworkName } from 'src/modules/zk-evm-bridge';
-import { Path as RoutePath, buildEthereumBridgePageLink } from 'src/router/routes';
+import { layerSwapLink, zKatanaBridgeUrl } from 'src/modules/zk-evm-bridge/index';
+import { stargateBridgeLink } from 'src/links/index';
+import {
+  Path as RoutePath,
+  buildCcipBridgePageLink,
+  buildEthereumBridgePageLink,
+  buildLzBridgePageLink,
+  buildTransferPageLink,
+} from 'src/router/routes';
+import { navigateInNewTab } from 'src/util-general';
 import { computed, defineComponent } from 'vue';
-import { stargateUrl, layerSwapLink, relayBridgeAppLink } from 'src/modules/zk-evm-bridge/index';
+import { CcipNetworkParam } from 'src/modules/ccip-bridge';
 
 export default defineComponent({
   components: {},
   setup() {
     const { currentAccount } = useAccount();
-    const { isZkEvm, networkNameSubstrate, isMainnet, isZkatana } = useNetworkInfo();
+    const {
+      isZkEvm,
+      networkNameSubstrate,
+      isMainnet,
+      isAstarZkEvm,
+      isAstar,
+      isH160,
+      isShibuyaEvm,
+      isAstarEvm,
+      nativeTokenSymbol,
+      ccipSoneiumLink,
+    } = useNetworkInfo();
 
     const l1Name = computed<string>(() => {
-      return isZkatana.value ? EthBridgeNetworkName.Sepolia : EthBridgeNetworkName.Ethereum;
+      return EthBridgeNetworkName.Ethereum;
     });
 
     const l2Name = computed<string>(() => {
-      return isZkatana.value ? EthBridgeNetworkName.Zkatana : EthBridgeNetworkName.AstarZk;
+      return EthBridgeNetworkName.AstarZk;
     });
 
     const cbridgeNetworkName = computed<string>(() => {
       return !isZkEvm.value && isMainnet.value ? networkNameSubstrate.value : 'Astar';
     });
 
-    const isEnableEthBridge = computed<boolean>(() => {
-      if (!isZkEvm.value) {
-        return false;
-      }
-      return true;
+    const isEnableEthBridge = computed<boolean>(() => isZkEvm.value && nativeBridgeEnabled);
+
+    const isEnableLzBridge = computed<boolean>(() => {
+      return isH160.value && (isAstar.value || isAstarZkEvm.value);
+    });
+
+    const isEnableCcipBridge = computed<boolean>(() => {
+      return isShibuyaEvm.value
+        ? ccipMinatoBridgeEnabled && ccipSepoliaBridgeEnabled && ccipShibuyaBridgeEnabled
+        : ccipSoneiumBridgeEnabled && ccipEthereumBridgeEnabled && ccipAstarBridgeEnabled;
     });
 
     return {
@@ -217,13 +237,29 @@ export default defineComponent({
       cbridgeAppLink,
       RoutePath,
       isEnableEthBridge,
+      isZkEvm,
       l1Name,
       l2Name,
-      relayBridgeAppLink,
       cbridgeNetworkName,
-      buildEthereumBridgePageLink,
-      stargateUrl,
       layerSwapLink,
+      zKatanaBridgeUrl,
+      isEnableLzBridge,
+      celerBridgeEnabled,
+      layerSwapBridgeEnabled,
+      nativeBridgeEnabled,
+      layerZeroBridgeEnabled,
+      stargateBridgeEnabled,
+      isEnableCcipBridge,
+      isShibuyaEvm,
+      isAstarEvm,
+      stargateBridgeLink,
+      CcipNetworkParam,
+      ccipSoneiumLink,
+      buildEthereumBridgePageLink,
+      buildLzBridgePageLink,
+      navigateInNewTab,
+      buildTransferPageLink,
+      nativeTokenSymbol,
     };
   },
 });

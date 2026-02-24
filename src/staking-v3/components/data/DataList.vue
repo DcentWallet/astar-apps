@@ -19,11 +19,14 @@
       <data-card :title="$t('stakingV3.era')" :description="$t('stakingV3.eraDescription')">
         {{ protocolState?.era ?? '--' }}
       </data-card>
+      <!-- staking and locking accounts is only available for Native Network -->
       <data-card
+        v-if="!isZkEvm"
         :title="$t('stakingV3.stakingAndLockingAccounts')"
         :description="$t('stakingV3.numberOfStakersAndLockersDescription')"
       >
-        {{ numberOfStakersAndLockers.stakersCount }} / {{ numberOfStakersAndLockers.lockersCount }}
+        {{ numberOfStakersAndLockers?.stakersCount }} /
+        {{ numberOfStakersAndLockers?.lockersCount }}
       </data-card>
     </div>
 
@@ -78,7 +81,7 @@
         :title="$t('stakingV3.tokensToBeBurned')"
         :description="$t('stakingV3.tokensToBeBurnedDescription')"
       >
-        <format-balance :balance="tokensToBeBurned.toString() ?? ''" />
+        <format-balance :balance="tokensToBeBurned?.toString() ?? ''" />
       </data-card>
     </div>
 
@@ -91,7 +94,7 @@
         :link-label="$t('stakingV3.tokenomics')"
       >
         <format-balance
-          :balance="activeInflationConfiguration.bonusRewardPoolPerPeriod.toString() ?? ''"
+          :balance="activeInflationConfiguration?.bonusRewardPoolPerPeriod.toString() ?? ''"
         />
       </data-card>
       <data-card
@@ -99,6 +102,18 @@
         :description="$t('stakingV3.bonusEligibleTokensDescription')"
       >
         <format-balance :balance="bonusEligibleTokens.toString() ?? ''" />
+      </data-card>
+    </div>
+
+    <div class="row--title">{{ $t('stakingV3.inflation') }}</div>
+    <div class="row--data-list">
+      <data-card
+        :title="$t('stakingV3.estimatedRealizedInflation')"
+        :description="$t('stakingV3.estimatedRealizedInflationDescription')"
+        :link-url="docsUrl.inflation"
+        :link-label="$t('stakingV3.tokenomics')"
+      >
+        {{ estimatedInflationFormatted }}
       </data-card>
     </div>
 
@@ -139,7 +154,8 @@ export default defineComponent({
       numberOfStakersAndLockers,
       tokensToBeBurned,
     } = useDataCalculations();
-    const { activeInflationConfiguration } = useInflation();
+    const { activeInflationConfiguration, estimatedInflation, estimateRealizedInflation } =
+      useInflation();
 
     const totalDapps = computed<number>(() => registeredDapps.value?.length ?? 0);
     const tvl = computed<string>(() => (currentEraInfo.value?.totalLocked ?? BigInt(0)).toString());
@@ -150,7 +166,7 @@ export default defineComponent({
       () => tiersConfiguration.value.numberOfSlots - dAppTiers.value.dapps.length
     );
 
-    const { nativeTokenSymbol } = useNetworkInfo();
+    const { nativeTokenSymbol, isZkEvm } = useNetworkInfo();
 
     const periodRemainingDays = computed<number>(() => {
       if (periodDuration.value && periodCurrentDay.value) {
@@ -161,6 +177,10 @@ export default defineComponent({
 
     const formattedTvlBalance = computed<string>(() =>
       balanceFormatter(tvl.value.toString() ?? '')
+    );
+
+    const estimatedInflationFormatted = computed<string>(() =>
+      estimatedInflation.value ? `${estimatedInflation.value.toFixed(2)} %` : '--'
     );
 
     return {
@@ -184,6 +204,8 @@ export default defineComponent({
       isVotingPeriod,
       docsUrl,
       formattedTvlBalance,
+      isZkEvm,
+      estimatedInflationFormatted,
     };
   },
 });

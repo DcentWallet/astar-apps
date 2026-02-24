@@ -114,6 +114,7 @@ export class PolkadotWalletService extends WalletService implements IWalletServi
                 signer: await this.getSigner(senderAddress),
                 nonce: -1,
                 tip,
+                withSignedTransaction: true,
               },
               (result) => {
                 try {
@@ -182,6 +183,21 @@ export class PolkadotWalletService extends WalletService implements IWalletServi
     value: Record<string, any>
   ): Promise<string> {
     throw new Error('Method not implemented.');
+  }
+
+  public async signMessage(signerAddress: string, message: string): Promise<string> {
+    const signer = await this.getSigner(signerAddress);
+    if (typeof signer.signRaw !== 'function') {
+      throw new Error('Signer does not support signRaw method');
+    }
+
+    const result = await signer.signRaw({
+      address: signerAddress,
+      data: message,
+      type: 'bytes',
+    });
+
+    return result.signature;
   }
 
   private async getAccounts(): Promise<Account[]> {

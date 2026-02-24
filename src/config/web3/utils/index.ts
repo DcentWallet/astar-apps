@@ -109,8 +109,8 @@ export const getChainId = (currentNetworkIdx: endpointKey): number => {
     return EVM.ASTAR_LOCAL_NODE;
   } else if (currentNetworkIdx === endpointKey.ASTAR_ZKEVM) {
     return EVM.ASTAR_ZKEVM_MAINNET;
-  } else if (currentNetworkIdx === endpointKey.ZKATANA) {
-    return EVM.ZKATANA_TESTNET;
+  } else if (currentNetworkIdx === endpointKey.ZKYOTO) {
+    return EVM.ZKYOTO_TESTNET;
   }
   return EVM.SHIBUYA_TESTNET;
 };
@@ -273,7 +273,7 @@ export const fetchErc20TokenInfo = async ({
       contract.methods.symbol().call(),
     ]);
 
-    const isZkEvm = srcChainId === ZkChainId.AstarZk || srcChainId === ZkChainId.Zkatana;
+    const isZkEvm = srcChainId === ZkChainId.AstarZk || srcChainId === ZkChainId.Zkyoto;
 
     let bridgedTokenAddress = '';
     let toChainId;
@@ -299,7 +299,7 @@ export const fetchErc20TokenInfo = async ({
       image,
       isWrappedToken: false,
       isXC20: isXc20Token(address),
-      wrapUrl: null,
+      bridgeUrl: null,
       bridgedChainId: toChainId,
       bridgedTokenAddress,
     };
@@ -360,4 +360,19 @@ export const handleCheckProviderChainId = async (provider: any): Promise<boolean
   } else {
     return await setupNetwork({ network: selectedChainId, provider });
   }
+};
+
+export const addressToBytes32 = (address: string): string => {
+  if (!address.startsWith('0x')) {
+    throw Error('Address must start with 0x');
+  }
+  const abiCoder = new ethers.utils.AbiCoder();
+  const byte32Address = abiCoder.encode(['address'], [address]);
+  const byte32AddressLength = 66;
+
+  if (byte32Address.length !== byte32AddressLength) {
+    throw Error('There is an error with formatting address');
+  }
+
+  return byte32Address;
 };

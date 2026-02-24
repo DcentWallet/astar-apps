@@ -5,6 +5,7 @@ import {
   AccountLedger,
   CombinedDappInfo,
   Constants,
+  DAppTier,
   DAppTierRewards,
   DappStakeInfo,
   EraInfo,
@@ -22,7 +23,9 @@ import {
 import { Symbols } from 'src/v2/symbols';
 import { ExtrinsicStatusMessage, IEventAggregator } from 'src/v2/messaging';
 import { useStore } from 'src/store';
-import { useAccount, useChainMetadata, useNetworkInfo, useLedger } from 'src/hooks';
+import { useAccount, useChainMetadata, useNetworkInfo } from 'src/hooks';
+import { ETHEREUM_EXTENSION } from 'src/modules/account';
+
 import { useI18n } from 'vue-i18n';
 import { useDapps } from './useDapps';
 import { ethers } from 'ethers';
@@ -42,11 +45,16 @@ export interface RewardsPerPeriod {
 export function useDappStaking() {
   const { t } = useI18n();
   const store = useStore();
-  const { currentAccount } = useAccount();
+  const { currentAccount, currentAccountName } = useAccount();
   const { registeredDapps, fetchStakeAmountsToStore, getDapp } = useDapps();
   const { decimal } = useChainMetadata();
   const { nativeTokenSymbol, isZkEvm } = useNetworkInfo();
-  const { isLedger } = useLedger();
+
+  const isH160 = computed<boolean>(() => store.getters['general/isH160Formatted']);
+
+  const isLockdropAccount = computed<boolean>(
+    () => !isH160.value && currentAccountName.value === ETHEREUM_EXTENSION
+  );
 
   const currentBlock = computed<number>(() => store.getters['general/getCurrentBlock']);
 
@@ -73,13 +81,17 @@ export function useDappStaking() {
     return (
       rewards ?? {
         dApp: BigInt(0),
-        staker: BigInt(0),
+        staker: {
+          amount: BigInt(0),
+          eraCount: 0,
+          period: 0,
+        },
         bonus: BigInt(0),
       }
     );
   });
 
-  const totalStakerRewards = computed<BigInt>(
+  const totalStakerRewards = computed<bigint>(
     () => rewards.value.staker.amount + rewards.value.bonus
   );
 
@@ -130,7 +142,7 @@ export function useDappStaking() {
     () => store.getters['stakingV3/getTiersConfiguration'] ?? initialTiersConfiguration
   );
 
-  const leaderboard = computed<Map<number, number>>(
+  const leaderboard = computed<Map<number, DAppTier>>(
     () => store.getters['stakingV3/getLeaderboard']
   );
 
@@ -168,7 +180,7 @@ export function useDappStaking() {
       ? protocolState.value.periodInfo.number < period - constants.value.rewardRetentionInPeriods
       : true;
 
-  const unstake = async (dapp: CombinedDappInfo, amount: number): Promise<void> => {
+  const unstake = async (dapp: CombinedDappInfo, amount: bigint): Promise<void> => {
     const stakingService = container.get<() => IDappStakingService>(
       Symbols.DappStakingServiceFactoryV3
     )();
@@ -180,7 +192,7 @@ export function useDappStaking() {
     );
     const staker = await stakingService.getStakerRewards(currentAccount.value);
     const bonus = await stakingService.getBonusRewards(currentAccount.value);
-    store.commit('stakingV3/setRewards', { ...rewards.value, staker, bonus });
+    store.commit('stakingV3/setRewards', { ...rewards.value, staker, bonus: bonus.amount });
     getCurrentEraInfo();
     fetchStakeAmountsToStore();
     await fetchStakerInfoToStore();
@@ -202,7 +214,7 @@ export function useDappStaking() {
       stakingService.getBonusRewards(currentAccount.value),
       stakingService.getDappRewards(dappAddress),
     ]);
-    store.commit('stakingV3/setRewards', { ...rewards.value, staker, bonus, dApp });
+    store.commit('stakingV3/setRewards', { ...rewards.value, staker, bonus: bonus.amount, dApp });
     fetchStakerInfoToStore();
     getCurrentEraInfo();
     fetchStakeAmountsToStore();
@@ -212,7 +224,10 @@ export function useDappStaking() {
     const stakingService = container.get<() => IDappStakingService>(
       Symbols.DappStakingServiceFactoryV3
     )();
-    await stakingService.claimStakerRewards(currentAccount.value, 'success');
+    await stakingService.claimStakerRewards(
+      currentAccount.value,
+      t('stakingV3.claimRewardSuccess')
+    );
     const staker = await stakingService.getStakerRewards(currentAccount.value);
     store.commit('stakingV3/setRewards', { ...rewards.value, staker });
   };
@@ -247,14 +262,39 @@ export function useDappStaking() {
     ]);
   };
 
+  const claimAndMoveStake = async (
+    moveFromAddress: string,
+    stakeInfo: DappStakeInfo[]
+  ): Promise<void> => {
+    const stakingService = container.get<() => IDappStakingService>(
+      Symbols.DappStakingServiceFactoryV3
+    )();
+    await stakingService.claimAndMoveStake(
+      currentAccount.value,
+      moveFromAddress,
+      stakeInfo,
+      t('stakingV3.moveSuccess', { number: stakeInfo.length })
+    );
+
+    await Promise.all([
+      getAllRewards(),
+      fetchStakerInfoToStore(),
+      fetchStakeAmountsToStore(),
+      getCurrentEraInfo(),
+    ]);
+  };
+
   const claimBonusRewards = async (): Promise<void> => {
     const stakingService = container.get<() => IDappStakingService>(
       Symbols.DappStakingServiceFactoryV3
     )();
 
-    await stakingService.claimBonusRewards(currentAccount.value, 'success');
+    await stakingService.claimBonusRewards(
+      currentAccount.value,
+      t('stakingV3.claimBonusRewardSuccess')
+    );
     const bonus = await stakingService.getBonusRewards(currentAccount.value);
-    store.commit('stakingV3/setRewards', { ...rewards.value, bonus });
+    store.commit('stakingV3/setRewards', { ...rewards.value, bonus: bonus.amount });
   };
 
   const claimDappRewards = async (contractAddress: string): Promise<void> => {
@@ -262,7 +302,11 @@ export function useDappStaking() {
       Symbols.DappStakingServiceFactoryV3
     )();
     if (contractAddress) {
-      await stakingService.claimDappRewards(contractAddress, currentAccount.value, 'success');
+      await stakingService.claimDappRewards(
+        contractAddress,
+        currentAccount.value,
+        t('stakingV3.claimRewardSuccess')
+      );
       const dApp = await stakingService.getDappRewards(contractAddress);
       store.commit('stakingV3/setRewards', { ...rewards.value, dApp });
     } else {
@@ -281,11 +325,11 @@ export function useDappStaking() {
     );
     const staker = await stakingService.getStakerRewards(currentAccount.value);
     const bonus = await stakingService.getBonusRewards(currentAccount.value);
-    store.commit('stakingV3/setRewards', { ...rewards.value, staker, bonus });
+    store.commit('stakingV3/setRewards', { ...rewards.value, staker, bonus: bonus.amount });
   };
 
   const withdraw = async (): Promise<void> => {
-    if (isLedger.value) {
+    if (isLockdropAccount.value) {
       const stakingService = container.get<IDappStakingServiceV2Ledger>(
         Symbols.DappStakingServiceV2Ledger
       );
@@ -310,7 +354,7 @@ export function useDappStaking() {
   };
 
   const unlock = async (amount: bigint): Promise<void> => {
-    if (isLedger.value) {
+    if (isLockdropAccount.value) {
       const stakingService = container.get<IDappStakingServiceV2Ledger>(
         Symbols.DappStakingServiceV2Ledger
       );
@@ -319,11 +363,7 @@ export function useDappStaking() {
       const stakingService = container.get<() => IDappStakingService>(
         Symbols.DappStakingServiceFactoryV3
       )();
-      await stakingService.unlockTokens(
-        currentAccount.value,
-        Number(ethers.utils.formatEther(amount)),
-        t('stakingV3.unlockSuccess')
-      );
+      await stakingService.unlockTokens(currentAccount.value, amount, t('stakingV3.unlockSuccess'));
     }
   };
 
@@ -342,7 +382,8 @@ export function useDappStaking() {
 
     if (currentAccount.value) {
       staker = await stakingV3service.getStakerRewards(currentAccount.value);
-      bonus = await stakingV3service.getBonusRewards(currentAccount.value);
+      const bonusRewards = await stakingV3service.getBonusRewards(currentAccount.value);
+      bonus = bonusRewards.amount;
 
       if (ownedContracts.length > 0) {
         for await (const ownedContractAddress of ownedContracts) {
@@ -394,7 +435,7 @@ export function useDappStaking() {
     const stakingRepo = container.get<IDappStakingRepository>(Symbols.DappStakingRepositoryV3);
     const constants = await stakingRepo.getConstants();
     constants.minStakeAmountToken = Number(
-      (constants.minStakeAmount ?? 0) / BigInt(10 ** decimal.value)
+      (constants.minStakeAmount ?? BigInt(0)) / BigInt(10 ** decimal.value)
     );
     store.commit('stakingV3/setConstants', constants);
   };
@@ -408,14 +449,16 @@ export function useDappStaking() {
 
   const canStake = (
     stakes: DappStakeInfo[],
-    availableTokensBalance: bigint
+    useableBalance: bigint,
+    moveFromAddress: string
     //Returns: [result, message, docsUrl]
   ): [boolean, string, string] => {
     let stakeSum = BigInt(0);
+    const isMove = moveFromAddress !== '';
 
     for (const stake of stakes) {
-      const stakeAmount = ethers.utils.parseEther(stake.amount.toString()).toBigInt();
-      stakeSum += stakeAmount;
+      stakeSum += stake.amount;
+
       if (!stake.address) {
         return [false, t('stakingV3.noDappSelected'), ''];
       } else if (isZkEvm.value) {
@@ -423,17 +466,8 @@ export function useDappStaking() {
       } else if (stake.amount <= 0) {
         return [false, t('stakingV3.dappStaking.ZeroAmount'), ''];
       } else if (
-        constants.value &&
-        (ledger.value?.contractStakeCount ?? 0) >= constants.value.maxNumberOfStakedContracts
-      ) {
-        return [
-          false,
-          t('stakingV3.dappStaking.TooManyStakedContracts'),
-          docsUrl.dappStakingStaked16Dapps,
-        ];
-      } else if (
-        constants.value?.minStakeAmountToken &&
-        stake.amount < constants.value.minStakeAmountToken &&
+        constants.value?.minStakeAmount &&
+        stake.amount < constants.value.minStakeAmount &&
         getStakerInfo(stake.address) === undefined
       ) {
         return [
@@ -445,12 +479,13 @@ export function useDappStaking() {
         ];
       } else if (protocolState.value?.maintenance) {
         return [false, t('stakingV3.dappStaking.Disabled'), ''];
-      } else if (stakeSum > availableTokensBalance) {
+      } else if (stakeSum > useableBalance) {
         return [false, t('stakingV3.dappStaking.UnavailableStakeFunds'), ''];
       } else if (
+        !isMove &&
         constants.value &&
         ethers.utils.parseEther(constants.value.minBalanceAfterStaking.toString()).toBigInt() >
-          availableTokensBalance - stakeSum
+          useableBalance - stakeSum
       ) {
         return [
           false,
@@ -470,18 +505,33 @@ export function useDappStaking() {
       }
     }
 
+    if (isMove) {
+      const dappInfo = getStakerInfo(moveFromAddress);
+      const stakedAmount = dappInfo?.staked.totalStake ?? BigInt(0);
+      if (constants.value && constants.value.minStakeAmount > stakedAmount - stakeSum) {
+        return [
+          true,
+          t('stakingV3.willMoveAll', {
+            amount: constants.value.minStakeAmountToken,
+          }),
+          '',
+        ];
+      }
+    }
+
     return [true, '', ''];
   };
 
-  const canUnStake = (dappAddress: string, amount: number): [boolean, string] => {
-    const unstakeAmount = BigInt(ethers.utils.parseEther(amount.toString()).toString());
+  const canUnStake = (dappAddress: string, amount: bigint): [boolean, string] => {
     const dappInfo = getStakerInfo(dappAddress);
     const stakedAmount = dappInfo?.staked.totalStake ?? BigInt(0);
     const stakeInfo = getStakerInfo(dappAddress);
 
+    let message = '';
+
     if (amount <= 0) {
       return [false, t('stakingV3.dappStaking.ZeroAmount')];
-    } else if (unstakeAmount > stakedAmount) {
+    } else if (amount > stakedAmount) {
       return [false, t('stakingV3.dappStaking.UnstakeAmountTooLarge')];
     } else if (protocolState.value?.maintenance) {
       return [false, t('stakingV3.dappStaking.Disabled')];
@@ -494,31 +544,33 @@ export function useDappStaking() {
       (ledger.value?.unlocking?.length ?? 0) >= constants.value.maxUnlockingChunks
     ) {
       return [false, t('stakingV3.dappStaking.TooManyUnlockingChunks')];
-    } else if (constants.value && constants.value.minStakeAmount > stakedAmount - unstakeAmount) {
-      // Handle unstaking all tokens.
-      return [
-        true,
-        t('stakingV3.willUnstakeAll', {
-          amount: constants.value.minStakeAmountToken,
-        }),
-      ];
-    } else if (
+    }
+
+    if (
       stakeInfo?.loyalStaker &&
       protocolState.value?.periodInfo.subperiod === PeriodType.BuildAndEarn &&
-      stakeInfo.staked.totalStake - unstakeAmount < stakeInfo.staked.voting
+      stakeInfo.staked.totalStake - amount < stakeInfo.staked.voting
     ) {
       // Handle possibility to lose bonus rewards.
-      const message =
+      message =
         stakeInfo.staked.buildAndEarn > BigInt(0)
           ? t('stakingV3.loyalStakerWarningAmount', {
               amount: ethers.utils.formatEther(stakeInfo.staked.buildAndEarn),
             })
           : t('stakingV3.loyalStakerWarning');
-
-      return [true, message];
     }
 
-    return [true, ''];
+    if (constants.value && constants.value.minStakeAmount > stakedAmount - amount) {
+      // Handle un-staking all tokens.
+      message =
+        message +
+        ' ' +
+        t('stakingV3.willUnstakeAll', {
+          amount: constants.value.minStakeAmountToken,
+        });
+    }
+
+    return [true, message];
   };
 
   const canUnlock = (amount: number): [boolean, string] => {
@@ -553,7 +605,12 @@ export function useDappStaking() {
 
   const getDappTier = (dappId: number): number | undefined => {
     const tier = leaderboard.value?.get(dappId);
-    return tier !== undefined ? tier + 1 : undefined;
+    return tier !== undefined ? tier.tierId + 1 : undefined;
+  };
+
+  const getDappRank = (dappId: number): number | undefined => {
+    const tier = leaderboard.value?.get(dappId);
+    return tier?.rank;
   };
 
   const fetchStakerInfoToStore = async (): Promise<void> => {
@@ -618,21 +675,6 @@ export function useDappStaking() {
     return period.toString().padStart(3, '0');
   };
 
-  const warnIfLedger = (): void => {
-    // Show warning to ledger users.
-    const { isLedger } = useLedger();
-    const { isDappStakingV3 } = useDappStaking();
-    if (isLedger.value && isDappStakingV3.value) {
-      const eventAggregator = container.get<IEventAggregator>(Symbols.EventAggregator);
-      eventAggregator.publish(
-        new ExtrinsicStatusMessage({
-          success: false,
-          message: t('stakingV3.ledgerNotSupported'),
-        })
-      );
-    }
-  };
-
   return {
     protocolState,
     ledger,
@@ -665,9 +707,11 @@ export function useDappStaking() {
     getDappRewards,
     fetchConstantsToStore,
     claimLockAndStake,
+    claimAndMoveStake,
     getCurrentEraInfo,
     getDappTiers,
     getDappTier,
+    getDappRank,
     fetchStakerInfoToStore,
     fetchTiersConfigurationToStore,
     withdraw,
@@ -679,6 +723,5 @@ export function useDappStaking() {
     rewardExpiresInNextPeriod,
     getStakerInfo,
     formatPeriod,
-    warnIfLedger,
   };
 }

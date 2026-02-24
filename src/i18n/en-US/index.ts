@@ -44,14 +44,6 @@ export default {
   help: 'Help',
   share: 'Share',
   multisig: 'Multisig',
-  modals: {
-    yokiOrigins: {
-      introducing: 'Introducing a new experience on zkEVM',
-      experienceNow: 'Experience now',
-      learnMore: 'Learn more',
-      keep: 'Keep me on the Portal',
-    },
-  },
   sort: {
     sortBy: 'Sort by',
     amountHightToLow: 'Amount: High to Low',
@@ -68,14 +60,16 @@ export default {
     blankDestAddress: 'Destination address is blank',
     inputtedInvalidAddress: 'Inputted invalid address',
     selectedInvalidNetworkInWallet: 'Selected invalid network in your wallet',
-    balanceNotEnough: 'You do not have enough ETH in your account to pay for the transaction fee',
+    balanceNotEnough:
+      'You do not have enough {symbol} in your account to pay for the transaction fee',
+    maximumAmount:
+      'The maximum amount you can transfer is {amount} {symbol}. Please try again with a smaller amount',
     insufficientBridgeAmount: 'Minimum transfer amount is {amount} {token}',
     insufficientOriginChainBalance: 'Minimum balance on {chain} network is {amount} {token}',
     insufficientOriginChainNativeBalance: 'Insufficient native token balance on {chain}',
     insufficientExistentialDeposit:
       'Account balances in {network} network is below than the existential deposit amount',
     withdrawalNotSupport: "The portal doesn't support withdrawing to {chain} at this moment",
-    ledgerNotOpened: 'Ledger has not opened Astar App. Please open it and refresh this page.',
     claimRewards:
       'DApp Staking V3 is coming early 2024! Make sure to claim your rewards and stay tuned for the release date.',
     underDevelopmentShibuyaWarning:
@@ -83,11 +77,16 @@ export default {
     ledgerUsers: 'Ledger Users',
     ledgerUsersImportantInformation:
       'Important information regarding the upcoming transition to dApp Staking V3. Check out the details',
-    yoki: 'Yoki Origins',
-    yokiSignUp: 'Yoki Origins is a user onboarding journey on Astar zkEVM. Experience now!',
     stakingNotSupportZkEvm:
       'dApps Staking is not supported on {networkNotSupport}, please switch to {networkSupport} and start staking!',
     connectedInvalidNetwork: 'Please connect to the correct network in your wallet',
+    attention: 'Attention',
+    testnetSwitchWarning:
+      'We have switched our zkEVM testnet to zKyoto from zKatana. zKatana will no longer available.',
+    xcmEvmTokenIsDisabled: 'Withdrawing {token} via EVM wallets is temporarily disabled',
+    notEnoughFeeToken: "You don't have enough {token} for the withdrawal fee",
+    zkevmUnderMaintenance:
+      'Astar zkEVM is currently under maintenance due to an upgrade that applies the latest fixes. We apologize for any inconvenience.',
   },
   toast: {
     transactionFailed: 'Transaction failed with error: {message}',
@@ -131,6 +130,9 @@ export default {
     loading: 'Loading...',
     comingSoon: 'Coming soon',
     checkHowToSolve: 'Check how to solve this problem',
+    snapDeprecated:
+      '⚠️ Important: Astar Snap is being deprecated soon. Make sure to migrate your assets to a supported wallet to keep them accessible.',
+    availableWallet: 'You can find available wallet options in our documentation.',
     speed: {
       speed: 'Transaction speed',
       speedTip: 'Transaction speed (Tip)',
@@ -162,6 +164,7 @@ export default {
     theme: 'Theme',
     close: 'Close',
     comingsoon: 'Something ink!redible coming soon',
+    governance: 'Governance',
   },
   drawer: {
     network: 'Network',
@@ -202,7 +205,6 @@ export default {
         "Switch your network to 'Shiden' in the Math Wallet extension and refresh this page",
     },
     showBalance: 'Show {token} balance',
-    isLedgerAccount: 'This is a Ledger account, connected and running Astar app',
     switchWalletConnectNetwork: 'Please switch to {network} network in your wallet',
     multisig: {
       initPolkasafe: 'Initializing PolkaSafe SDK for signature request; this may take a while',
@@ -308,7 +310,7 @@ export default {
   myReward: {
     totalStaked: 'Total Staked',
     availableToClaim: 'Available to claim',
-    estimatedRewards: 'Estimated Rewards',
+    estimatedRewards: 'Estimated rewards',
     era: 'Era',
     claim: 'Claim',
     restake: 'Re-Stake After Claiming',
@@ -320,14 +322,6 @@ export default {
       'The number of eras that is shown here is per dApp. You may need to claim multiple times if you have too many unclaimed eras.',
     restakeTip:
       'By turning on, your rewards will be automatically re-staked when you make a claim.',
-    claimable: {
-      limitation:
-        'There is a limitation on the number of eras that can be claimed in one transaction.',
-      nativeWallets: 'Native wallets: ≒56 eras',
-      ledgerX: 'Ledger Nano X: 6 eras',
-      ledgerSPlus: 'Ledger Nano S Plus: 6 eras',
-      ledgerS: 'Ledger Nano S: 2 eras',
-    },
     dappsOwners: 'DApps owners! We can now help to promote your campaign. Please check',
     dappsOwnersLink: 'the details.',
   },
@@ -481,6 +475,7 @@ export default {
       switching: 'Switching to',
       willBeBack: 'We will be back',
       verySoon: 'very soon',
+      visitLater: 'Please visit the page later.',
     },
   },
   assets: {
@@ -503,6 +498,9 @@ export default {
     syncing: 'Syncing...',
     faucet: 'Faucet',
     bridge: 'Bridge',
+    bridgeToSoneium: 'Bridge to Soneium',
+    bridgeToEthereum: 'Bridge to Ethereum',
+    swap: 'Swap',
     manage: 'Manage',
     xcm: 'XCM',
     wrap: 'Wrap',
@@ -558,6 +556,7 @@ export default {
       xcm: '(XCM)',
       faq: 'FAQ',
       recentHistory: 'Recent History',
+      ccipHistory: 'Find your recent history on CCIP Explorer',
       hotTopic: 'Hot Topic',
       inputAddressManually: 'Input an address manually',
       goBack: 'Go back',
@@ -568,6 +567,7 @@ export default {
       howToUsePortal: 'HOW TO USE THE PORTAL',
       xcmIsDisabled: 'XCM with {network} is temporarily disabled',
       xcmEvmIsDisabled: 'XCM to {network} via EVM wallets is temporarily disabled',
+      toPlaceholder: '0x...(EVM) or Astar Native addresses',
     },
     modals: {
       max: 'Max',
@@ -578,8 +578,6 @@ export default {
       notSendToEvmExchanges:
         "I’m NOT sending tokens to Exchange's EVM deposit addresses. I understand that if I do so, the funds will likely be lost.",
       understandWarning: 'I understand that if I do so, the funds will likely be lost',
-      notDestIsLedgerAccount:
-        'The destination address is neither a ledger native account nor an exchange address. I understand that if I do so, the funds will likely be lost.',
       notDestIsExchangeAddress: 'Destination address is not an Exchange address',
       youWillReceive: 'You will receive',
       faucetNextRequest: 'Time left until the next request',
@@ -633,6 +631,7 @@ export default {
         notInputExchanges: 'Do not input wallet address of exchanges',
         tooltip:
           'We keep {amount} {symbol} in the origin chain account to avoid losing the funds. When depositing from origin chain, only tokens that are above the minimum balance are transferable.',
+        otherTokenAsFee: '{amount} {feeToken} is used for withdrawal fee to AssetHub',
       },
       lockdropWarning: {
         warning:
@@ -674,6 +673,25 @@ export default {
       networkStatuses: 'Network Status',
       updatedAgo: 'Updated {time} ago',
       xcmDepositWithdrawalAssets: 'XCM Deposit/Withdrawal Assets',
+      zkEVMNetworkStatuses: 'Astar zkEVM Network Status',
+    },
+    burn: {
+      burn: 'Burn',
+    },
+    inflation: {
+      adjustableInflation: 'Adjustable inflation',
+      treasury: 'Treasury',
+      collators: 'Collators',
+      baseStakers: 'Base stakers',
+      bonus: 'Bonus',
+      dAppRewards: 'dApp rewards',
+      adjustableStakers: 'Adjustable stakers',
+      adjustableStakersShort: 'Adj. stakers',
+      activeAdjustable: '{percentage}% is active',
+      currentInflationRate: 'Current inflation rate',
+      maximumInflation: 'Maximum inflation ({rate}%)',
+      realizedInflation: 'Realized inflation',
+      wrongNetwork: 'Period 1 start block is not defined for the current network {network}.',
     },
   },
   chart: {
@@ -716,6 +734,7 @@ export default {
     portalIpfs: 'Portal is now on IPFS!',
     astarHome: 'Astar Home',
     astarDocs: 'Astar Docs',
+    goToAssets: 'Go to Assets Page',
   },
   disclaimer: {
     disclaimer: 'Disclaimer',
@@ -748,13 +767,12 @@ export default {
     noDappSelected: 'No dApp selected.',
     stakerRewardsExpired: 'Staker rewards expired.',
     dappStaking: {
-      Disabled: 'Pallet is disabled/in maintenance mode.',
+      Disabled: 'dApp staking is currently in maintenance mode.',
       NoExpiredEntries: 'There are no expired entries to clean up.',
       NoStakingInfo: 'Account has no staking information for the contract',
       NotOperatedDApp: 'dApp is part of dApp staking but is not active anymore.',
       PeriodEndsNextEra:
         'Period ends in the next era. It is not possible to stake in the last era of a period.',
-      TooManyStakedContracts: 'There are too many contract stake entries for the account.',
       TooManyUnlockingChunks:
         'Contract has too many unlocking chunks. Withdraw the existing chunks if possible or wait for current chunks to complete unlocking process to withdraw them.',
       UnavailableStakeFunds:
@@ -772,6 +790,11 @@ export default {
       'Innovative way of staking, only at Astar. Where ecosystem grow together',
     successfullyStaked: 'You successfully staked to {contractAddress}',
     voteTitle: 'Vote!',
+    votingOpen: 'Voting open',
+    votingOpenText:
+      'Experience dApp Staking, the unique staking mechanism exclusive to Astar, where communities can back their favorite teams by staking ASTR tokens and earn substantial rewards.',
+    stakeToday: 'Stake today, be entitled to big bonus!',
+    stakeTodayFormatted: 'Stake today,\nbe entitled to\nbonus!',
     voteText: 'I would like to vote my tokens with',
     transferText: 'I would like to move my funds from',
     stakeVoteOn: 'And vote/stake on',
@@ -791,7 +814,7 @@ export default {
       'Be sure you vote on dapps otherwise those tokens are not eligible for any rewards.',
     rewardsWillBeClaimed: 'Your unclaimed rewards will be claimed.',
     basicRewards: 'Basic rewards',
-    bonusRewards: 'Bonus rewards',
+    estimatedBonus: 'Estimated bonus',
     bonus: 'Bonus',
     bonusTip: 'Bonus will be claimable in the next voting period',
     dAppRewards: 'dApp rewards',
@@ -803,12 +826,12 @@ export default {
     voteNow: 'Vote now',
     voteStakeToday: 'Vote / Stake today',
     vote: 'Vote',
+    votes: 'Votes',
     VoteDescription:
       'Stakes are reset to 0, and users become eligible for bonus rewards by re-staking.',
     voteToday: 'Be entitled to bonus pool today',
     stakeOn: 'Stake on {name}',
     tier: 'Tier',
-    tierLeaderboard: 'Tier Leaderboard',
     projectLeaderboards: 'Project Leaderboards',
     rewardPerDay: 'Rewards per era',
     myStaking: 'My Staking',
@@ -820,7 +843,7 @@ export default {
     claimNow: 'Claim now',
     claim: 'Claim',
     dApp: 'dApp',
-    stakedAmount: 'Staked amount',
+    stakedAmount: 'Staked Amount',
     stakedAmountTooltip:
       'Staked amount means that the tokens are locked and staked. Rewards are distributed every era (day) during Build&Earn Subperiod.',
     lockedAmount: 'Locked amount',
@@ -842,7 +865,7 @@ export default {
     unlockingAmount: 'Unlocking amount',
     withdraw: 'Withdraw',
     relock: 'Re-lock',
-    currentTier: 'Current Tier',
+    currentTier: 'Current Tier / Rank',
     numberOfStakers: 'Number of stakers',
     totalEarned: 'Total Earned',
     yourDashboard: 'Your Dashboard',
@@ -900,19 +923,18 @@ export default {
     builderRewards: 'Builder Rewards',
     stakerRewards: 'Staker Rewards',
     stakedToLockedRatio: 'Staked to Locked Ratio',
-    tvvDescription:
-      'Total Volume of Vote is the rate that shows how much is staked within dApp Staking TVL.',
+    tvvDescription: 'Staked to Locked Ratio indicates how much of the dApp staking TVL is staked.',
     loyaltyStake: 'Loyalty Stake',
     bonusEligibleTokensDescription:
       'Real time amount of tokens that are entitled to receive bonus rewards.',
     bonusPool: 'Bonus pool',
     bonusPoolDescription: 'Fixed bonus allocation from block rewards. Check our ',
+    dappTierDescription: 'dApp tier and rank. Check our ',
     dAppsSlots: 'dApps slots',
     dAppsSlotsDescription:
       'Number of project rewards for the slots filled by projects in the current era.',
-    unfilledSlot: 'Unfilled slot tokens',
-    unfilledSlotDescription:
-      'Total amount of tokens for slots that are not filled by the projects in the current era.',
+    unfilledSlot: 'Unfilled slots',
+    unfilledSlotDescription: 'The number of tier slots without projects in the current era.',
     ourDapps: 'Our dApps',
     ourData: 'Our data',
     dapp: {
@@ -922,9 +944,14 @@ export default {
     unregisteredDappInfo:
       'This project has been unregistered but If you are currently entitled to Bonus you will be entitled to it as well as basic rewards as long as you do not move/unstake the fund during this Period. Unstake if you still want to (it has {days} days unlocking period).',
     voteSuccess: 'You successfully voted on {number} dApp(s). All pending rewards are claimed.',
+    moveSuccess: 'You successfully moved your stake to {number} dApp(s).',
+    looseBonusWarning:
+      'You will partially loose your bonus rewards if you move your stake to more than {number} dApp(s).',
+    looseAllBonusWarning: 'You will loose your bonus rewards if you move your stake.',
     unbondSuccess: 'You successfully unbonded from {dapp}.',
     unbondFromUnregisteredSuccess: 'You successfully unbonded from unregistered dApp {dapp}.',
     claimRewardSuccess: 'You successfully claimed your rewards.',
+    claimBonusRewardSuccess: 'You successfully claimed your bonus rewards.',
     withdrawSuccess: 'You successfully withdrew your locked tokens.',
     relockSuccess: 'You successfully re-locked your tokens.',
     unlockSuccess: 'You successfully unlocked your tokens.',
@@ -939,6 +966,8 @@ export default {
     registerNow: 'Register now',
     willUnstakeAll:
       'The operation will unstake all of your staked tokens because the minimum staking amount is {amount} tokens.',
+    willMoveAll:
+      'The operation will move all of your staked tokens because the minimum staking amount is {amount} tokens.',
     onboarding: {
       introducing: 'Introducing',
       innovativeWayOfStaking: 'Innovative way of staking',
@@ -959,13 +988,6 @@ export default {
     unbondFrom: 'Unbond from {name}',
     startUnbonding: 'Start unbonding',
     unbondingEra: 'Unbonding takes {unbondingPeriod} eras before you can withdraw',
-    migrationSupport: {
-      actionRequired: 'Action Required',
-      yourTokensAreLocked:
-        'Your tokens are locked in dAppStaking V2. Please unbond and withdraw your tokens. dApp Staking V3 is temporally unavailable for those Ledger Astar Native App users, please move your funds to a soft wallet or a Ledger EVM account to be able to participate in dApp staking.',
-      migrateNow: 'Migrate Now',
-    },
-    ledgerNotSupported: 'Ledger native accounts are not supported for dApp staking V3 yet.',
     moreInfo: 'More info',
     unlockFrom: 'Unlock from {name}',
     startUnlocking: 'Start unlocking',
@@ -978,6 +1000,82 @@ export default {
       learn: 'Learn',
       whatIsDappStaking: 'What is dApp staking?',
       howToParticipate: 'How to participate dApp staking?',
+      startStaking: 'Start staking',
+      chooseDapps: 'Choose dApps',
+      chooseDappsDescription:
+        'Choose dApps you want to support; network rewards will be distributed to those you select.',
+      addAmount: 'Add amount you wish',
+      addAmountDescription: 'Simple as it is, just decide how much you would like to stake.',
+      allDone: 'All done!',
+      allDoneDescription:
+        'Enjoy your rewards, and check how much your selected dApps are receiving.',
+      category: 'Category',
+      lastTVL: 'Last TVL',
+      newbies: 'Newbies',
+      backToCategory: 'Go back',
+      totalStakingAmount: 'Total staking amount',
+      yourUnclaimedRewards: 'Your unclaimed rewards',
+      chooseCategory: 'Which category are you interested in most?',
+      chooseProjects: 'Now choose projects you would like to support.',
+      addAmounts: 'Please add the amount to each card.',
+      review: 'Check everything is ok before confirming.',
+      availableAfterStaking: 'Available amount after staking',
+      remainingAmountAfterMoving: 'Remaining amount on origin dApp after moving',
+      beSureToVote:
+        'Be sure you vote on dapps otherwise those tokens are not eligible for any rewards.',
+      yourAvailableBalance: 'Your available balance',
+      availableToMove: 'Available to move',
+      moveFunds: 'Move funds',
+      safeMoveInfo:
+        'You can move your stake to up to {number} dApp(s) without loosing your bonus rewards.',
+    },
+    registration: {
+      success: 'You successfully registered dApp {name} to the store.',
+      error:
+        'An unexpected error occurred during dApp registration. Please screenshot this message and send to the Astar team. {error}',
+    },
+    inflation: 'Inflation',
+    estimatedRealizedInflation: 'Estimated realized inflation',
+    estimatedRealizedInflationDescription:
+      'Estimated realized inflation rate at the end of the current inflation cycle. Check our',
+    remainingTime: 'Remaining time',
+    stakingAPR: 'Staking APR',
+    bonusAPR: 'Bonus APR',
+    manageStakingAssets: 'Manage staking assets',
+    newPeriodWarning:
+      'New period begins in {days} days! Remember to stake during the voting period to qualify for bonus rewards!',
+    stats: 'Stats',
+    dappEarner: 'Total Rewards Claimed',
+    newVotingPeriod: 'New voting period',
+    bonusPeriodEnds: 'Bonus period ends in {eras} days',
+    userRewardsApr: 'User Rewards APR',
+    unmintedTokens: 'Unminted Tokens',
+    basicApr: 'Basic APR',
+    moreInfoFor: 'More info for',
+    bonusRewards: 'Bonus Rewards',
+    threshold: 'Threshold',
+    percentageLocked: 'Percentage of Supply Locked',
+    unclaimedRewards: 'Unclaimed rewards',
+    rewardsClaimedOnStake: 'Rewards will be claimed when stake',
+    ifYouStakeNow: 'Basic APR + Bonus (If you stake now)',
+    defiDescription: 'Discover the world of decentralized finance solutions on Astar.',
+    'unstoppable-grantsDescription':
+      'Support projects in the Unstoppable Community Grants program, powered by dApp staking.',
+    nftDescription: 'Find and support creative communities with Astar’s NFT dApps.',
+    toolingDescription:
+      'Support powerful tools and frameworks designed to accelerate network growth.',
+    utilityDescription:
+      'Stake to essential projects that enhance the productivity and functionality of Web3.',
+    othersDescription: 'Explore a diverse set of blockchain dApps.',
+    basicAprPlusBonus: 'Basic APR + Bonus',
+    restake: {
+      title: 'Re-stake your rewards',
+      description:
+        'Would you like to re-stake your rewards today? This will increase your daily staking rewards.',
+      restakeConfirmation: 'Yes re-stake my rewards',
+      restakeCancelation: 'No I would not wish to re-stake my rewards',
+      rewardDistribution:
+        'All rewards will be proportionally distributed to the dApps you are currently staking on.',
     },
   },
   bridge: {
@@ -990,40 +1088,62 @@ export default {
     completed: 'Completed',
     inProgress: 'In Progress',
     approvalMaxAmount: 'Approve Max Amount (option)',
-    disabledWithdrawal: 'Bridge to {network} is temporarily disabled',
+    disabledWithdrawal: 'Bridge to {network} is disabled.',
     thirdPartyBridge: '3rd Party Bridge',
-    ethereumBridge: {
-      title: 'Native Bridge',
-      tag: 'ERC20',
-      text: 'Transfer assets between {l1} and {l2}.',
-      text2: 'Available on Astar zkEVM. Switch the network to use it.',
-      learn: '(learn more)',
+    bridgeMaintenanceMode: 'Bridge is currently under maintenance mode. Please come back later.',
+    ccipSbyBridge: {
+      title: 'SBY Bridge',
+      tag: 'SBY',
+      text: 'Transfer SBY between Shibuya EVM, Soneium Minato and Sepolia. Powered by CCIP.',
+      remark: 'Available on Shibuya EVM. Switch the network to use it.',
     },
-    astarBridge: {
-      title: 'LayerZero',
+    ccipAstrBridge: {
+      title: 'ASTR Bridge',
       tag: 'ASTR',
-      text: 'Transfer ASTR token between Astar EVM and Astar zkEVM.',
-      text2: 'Currently under development',
+      text: 'Transfer ASTR between Astar EVM, Soneium and Ethereum. Powered by CCIP.',
+      remark: 'Available on Astar EVM. Switch the network to use it.',
+    },
+    stargateBridge: {
+      title: 'Stargate Bridge',
+      tag: 'ERC20',
+      text: '3rd Party Bridge. Transfer assets between Soneium and Astar EVM.',
     },
     celerBridge: {
       title: 'Celer Bridge',
       tag: 'ERC20',
       text: '3rd Party Bridge. Transfer assets between Ethereum or L2s and {cbridgeNetworkName} EVM.',
+      warning: 'Celer Team announced to not access to cbridge, please do not use it.',
     },
-    relayBridge: {
-      title: 'Relay Link',
-      tag: 'ETH',
-      text: '3rd Party Bridge. Transfer assets between Ethereum or L2s and Astar zkEVM.',
-    },
-    layerSwap: {
-      title: 'Layerswap',
-      tag: 'ETH',
-      text: '3rd Party Bridge. Fast and reliable crypto transfers across networks to Astar zkEVM.',
+    astarEvmBridge: {
+      title: 'EVM Bridge',
+      text: 'Transfer assets between EVM and native network.',
     },
     warning32blocks: 'It could take around 10~20mins or more to finalize',
+    warningCcipTime: 'It could take approximately {time} mins to finalize the bridge transaction',
     warning2steps:
       'Bridging to L1 (Ethereum) involves 2 steps, and it requires users to make a claim on the L1 network (available in Recent History)',
+    slippage: 'Slippage: {percent}%',
+    feeOnTransaction: 'Transaction fee: {amount} {symbol}',
+    feeOnBridge: 'Bridge fee: {amount} {symbol}',
+    rebate: 'You will receive 0.00008 ETH for gas on Soneium',
     gelatoApiError: 'Bridge UI is not available, please try again later',
+    warningHighTraffic:
+      'High bridge traffic may delay withdrawal transactions up to 5 hours. We appreciate your patience.',
+    warningHighTrafficMore: '(read more)',
+    warningInvalidWallet: 'Please connect your EVM wallet to use the bridge',
+    underMaintenance:
+      'Astar zkEVM is currently under the maintenance. We apologize for any inconvenience.',
+    ccipUnderMaintenance:
+      'CCIP bridge is currently under the maintenance. We apologize for any inconvenience.',
+    modals: {
+      highTraffic: {
+        text1:
+          'We are currently experiencing unusually high traffic on our canonical bridge, leading to longer than usual processing times for withdrawal. Your transaction may take up to 20 hours to complete. We understand how valuable your time is and are working diligently to resolve this congestion by scaling the infrastructure.',
+        text2:
+          'For urgent transactions, you might consider scheduling them during off-peak hours or exploring alternative 3rd party bridge partners. We appreciate your patience and understanding as we strive to enhance your experience. Thank you for your continued support.',
+        understood: 'Understood',
+      },
+    },
     tokenInfo: {
       invalidTokenAddress: 'Invalid token address',
       tokenAddress: '{network} token address',
@@ -1035,5 +1155,11 @@ export default {
       tokenNotSupported: "This token isn't supported bridging from {network}",
       interactCarefully: 'Interact carefully with new or suspicious tokens',
     },
+  },
+  governance: {
+    newProposals: 'New proposals',
+    ongoingReferenda: 'Ongoing referenda',
+    governance: 'Governance',
+    noProposals: 'No proposals at this time. Visit Subsquare to create a new one.',
   },
 };

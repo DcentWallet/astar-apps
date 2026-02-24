@@ -16,8 +16,7 @@ import { computed, ref, watch } from 'vue';
 import { getWcProvider } from './helper/wallet';
 import { useNetworkInfo } from './useNetworkInfo';
 import { useNft } from './useNft';
-
-export const ETHEREUM_EXTENSION = 'Ethereum Extension';
+import { ETHEREUM_EXTENSION } from 'src/modules/account';
 
 // Memo: Gives some time for syncing
 const DELAY = 100;
@@ -63,7 +62,6 @@ export const useAccount = () => {
       store.commit('general/setCurrentAddress', null);
       store.commit('general/setIsH160Formatted', false);
       store.commit('general/setIsEthWallet', false);
-      store.commit('dapps/setClaimedRewardsAmount', 0);
       store.commit('general/setCurrentWallet', '');
       store.commit('general/setCurrentEcdsaAccount', {
         ethereum: '',
@@ -106,26 +104,30 @@ export const useAccount = () => {
 
     if (mapped) {
       const identityRepository = container.get<IdentityRepository>(Symbols.IdentityRepository);
-      const nftRepository = container.get<INftRepository>(Symbols.NftRepository);
+      // const nftRepository = container.get<INftRepository>(Symbols.NftRepository);
       const identity = await identityRepository.getIdentity(isEvmAddress ? mapped : address);
       const name = identity?.display || '';
 
       let avatarUrl: string | undefined;
       let nft: NftMetadata | undefined;
 
-      const avatarContractAddress = identity?.getAvatarContractAddress();
-      const avatarTokenId = identity?.getAvatarTokenId();
-      if (avatarContractAddress && avatarTokenId) {
-        nft = await nftRepository.getNftMetadata(
-          currentNetworkName.value.toLowerCase(),
-          avatarContractAddress,
-          avatarTokenId
-        );
+      // const avatarContractAddress = identity?.getAvatarContractAddress();
+      // const avatarTokenId = identity?.getAvatarTokenId();
+      // if (avatarContractAddress && avatarTokenId) {
+      //   try {
+      //     nft = await nftRepository.getNftMetadata(
+      //       currentNetworkName.value.toLowerCase(),
+      //       avatarContractAddress,
+      //       avatarTokenId
+      //     );
 
-        if (nft) {
-          avatarUrl = getProxiedUrl(nft.image);
-        }
-      }
+      //     if (nft) {
+      //       avatarUrl = getProxiedUrl(nft.image);
+      //     }
+      //   } catch (error) {
+      //     console.error('Unable to fetch nft metadata', error);
+      //   }
+      // }
 
       const account: UnifiedAccount = {
         nativeAddress: isEvmAddress ? mapped : address,

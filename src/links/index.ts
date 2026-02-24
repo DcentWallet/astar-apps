@@ -1,20 +1,22 @@
 import { endpointKey, providerEndpoints } from 'src/config/chainEndpoints';
 import { blockExplorerUrls } from 'src/config/web3';
-import Web3 from 'web3';
+import type Web3 from 'web3';
 
 export const docsUrl = {
   topPage: 'https://docs.astar.network',
   evmDeposit:
-    'https://docs.astar.network/tutorial/how-to-send-astr-sdn-from-metamask-to-polkadot.js',
-  troubleShooting: 'https://docs.astar.network/docs/use/user-guides/troubleshooting',
+    'https://docs.astar.network/docs/use/manage-assets/transfer-tokens#sending-astrsdn-to-astar-native-accounts-from-astar-evm',
+  troubleShooting: 'https://docs.astar.network/docs/use/troubleshooting/',
   createPromotion: 'https://docs.astar.network/docs/use/dapp-staking/for-devs/create-promotion/',
   tokenomics2: 'https://docs.astar.network/docs/learn/tokenomics2/',
+  inflation: 'https://docs.astar.network/docs/learn/tokenomics2/Inflation/',
   faqLedger:
     'https://docs.astar.network/docs/learn/dapp-staking/dapp-staking-faq/#q-i-am-a-leger-astar-native-app-user-what-do-i-need-to-do',
   learnDappStaking: 'https://docs.astar.network/docs/learn/dapp-staking/',
   dappStakingForStakers: 'https://docs.astar.network/docs/use/dapp-staking/for-stakers/',
   dappStakingStaked16Dapps:
     'https://docs.astar.network/docs/learn/dapp-staking/dapp-staking-faq/#q-ive-staked-16-dapps-and-now-i-cant-add-or-move-tokens-and-im-getting-an-error-what-should-i-do',
+  availableWallets: 'https://docs.astar.network/docs/use/get-started/',
 };
 
 export const socialUrl = {
@@ -37,12 +39,10 @@ export const deepLink = {
   metamask: `https://metamask.app.link/dapp/${window.location.host}/${deepLinkPath.metamask}`,
 };
 
-// Memo: use for debugging
-// export const devOrigin = 'http://localhost:8080';
 export const stagingOrigin = 'https://staging.portal.astar.network';
 export const productionOrigin = 'https://portal.astar.network';
 // Memo: for debugging
-// export const productionOrigin = devOrigin;
+// export const productionOrigin = 'http://localhost:8080';
 
 export const polkasafeUrl = 'https://app.polkasafe.xyz';
 
@@ -54,12 +54,7 @@ export const polkadotJsUrl = {
   },
 };
 
-export const modals = {
-  yokiOrigins: {
-    learnMore: 'https://astar.network/blog/84017',
-    experienceNow: 'https://yoki.astar.network/',
-  },
-};
+export const ccipExplorerUrl = 'https://ccip.chain.link';
 
 export const getSubscanExtrinsic = ({
   subscanBase,
@@ -85,3 +80,8 @@ export const getEvmExplorerUrl = async (hash: string, web3: Web3): Promise<strin
   const blockExplorerUrl = blockExplorerUrls[connectedChainId];
   return `${blockExplorerUrl}/tx/${hash}`;
 };
+
+export const vastrBridgeLink =
+  'https://stargate.finance/bridge?srcChain=astar&srcToken=0xfffFffff00000000000000010000000000000010&dstChain=soneium&dstToken=0x60336f9296C79dA4294A19153eC87F8E52158e5F';
+
+export const stargateBridgeLink = 'https://stargate.finance/bridge';

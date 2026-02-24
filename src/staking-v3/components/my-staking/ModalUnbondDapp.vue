@@ -13,7 +13,7 @@
             <span class="text--to--balance">
               {{
                 $t('assets.modals.balance', {
-                  amount: $n(truncate(maxAmount)),
+                  amount: $n(truncate(maxAmountDisplay)),
                   token: nativeTokenSymbol,
                 })
               }}
@@ -40,6 +40,7 @@
               placeholder="0"
               class="input--amount input--no-spin"
               @input="inputHandler"
+              @wheel="(e) => e.preventDefault()"
             />
           </div>
         </div>
@@ -77,7 +78,6 @@ import SpeedConfiguration from 'src/components/common/SpeedConfiguration.vue';
 import ModalWrapper from 'src/components/common/ModalWrapper.vue';
 import { fadeDuration } from '@astar-network/astar-ui';
 import { wait } from '@astar-network/astar-sdk-core';
-import { useStore } from 'src/store';
 import { CombinedDappInfo } from 'src/staking-v3/logic';
 import { useDappStaking } from 'src/staking-v3/hooks';
 import RewardsPanel from '../RewardsPanel.vue';
@@ -111,31 +111,34 @@ export default defineComponent({
       getTokenImage({ isNativeToken: true, symbol: nativeTokenSymbol.value })
     );
     const { constants, unstake, canUnStake, getStakerInfo } = useDappStaking();
-    const store = useStore();
 
-    const minStakingAmount = computed<number>(() => {
-      const amt = store.getters['dapps/getMinimumStakingAmount'];
-      return Number(ethers.utils.formatEther(amt));
-    });
+    const minStakingAmount = computed<bigint>(() => constants.value?.minStakeAmount ?? BigInt(0));
+
     const isBelowThanMinStaking = computed<boolean>(() => {
       return minStakingAmount.value > Number(maxAmount.value) - Number(amount.value);
     });
-    const maxAmount = computed<string>(() => {
+    const maxAmount = computed<bigint>(() => {
       const selectedDappStakes = getStakerInfo(props.dapp.chain.address);
 
-      return selectedDappStakes
-        ? String(ethers.utils.formatEther(selectedDappStakes.staked.totalStake.toString()))
-        : '0';
+      return selectedDappStakes ? selectedDappStakes.staked.totalStake : BigInt(0);
     });
+
+    const maxAmountDisplay = computed<string>(() => {
+      return ethers.utils.formatEther(maxAmount.value);
+    });
+
     const amount = ref<string | null>(null);
     const errorMessage = ref<string | undefined>();
+    const isMaxAmount = ref<boolean>(false);
 
     const toMaxAmount = (): void => {
-      amount.value = truncate(maxAmount.value).toString();
+      amount.value = ethers.utils.formatEther(maxAmount.value.toString());
+      isMaxAmount.value = true;
     };
 
     const inputHandler = (event: any): void => {
       amount.value = event.target.value;
+      isMaxAmount.value = false;
     };
 
     const isClosingModal = ref<boolean>(false);
@@ -147,7 +150,10 @@ export default defineComponent({
     };
 
     const canUnbond = () => {
-      const [result, message] = canUnStake(props.dapp.basic.address, Number(amount.value));
+      const [result, message] = canUnStake(
+        props.dapp.basic.address,
+        ethers.utils.parseEther(amount.value ?? '0').toBigInt()
+      );
       errorMessage.value = message;
 
       return result;
@@ -155,9 +161,12 @@ export default defineComponent({
 
     const unbound = async (): Promise<void> => {
       await closeModal();
-      const unstakeAmount = isBelowThanMinStaking.value ? maxAmount.value : amount.value;
+      const unlockAmount = isMaxAmount.value
+        ? maxAmount.value
+        : ethers.utils.parseEther(amount.value ?? '0').toBigInt();
+      const unstakeAmount = isBelowThanMinStaking.value ? maxAmount.value : unlockAmount;
       if (unstakeAmount) {
-        await unstake(props.dapp, Number(unstakeAmount));
+        await unstake(props.dapp, unstakeAmount);
       } else {
         throw 'Invalid un-bonding amount';
       }
@@ -167,6 +176,7 @@ export default defineComponent({
       nativeTokenSymbol,
       nativeTokenImg,
       maxAmount,
+      maxAmountDisplay,
       amount,
       selectedTip,
       nativeTipPrice,

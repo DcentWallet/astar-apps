@@ -125,38 +125,35 @@
           :caption="$t('stakingV3.bonus')"
           :amount="bonus"
           :eras="bonusRewardEras"
-          :is-text-bonus-eligible="isMainnet"
           :is-tool-tip="!!bonus"
           :text-tool-tip="$t('stakingV3.bonusTip')"
         />
-        <button
+        <claim-and-restake-button
           v-if="width <= screenSize.sm"
-          class="btn--claim-mobile"
-          :disabled="!hasStakerRewards && !hasBonusRewards"
-          @click="claimStakerAndBonusRewards()"
+          :claim-type="ClaimType.Both"
+          :width="400"
         >
-          {{ $t('stakingV3.claimNow') }}
-        </button>
+          <button class="btn--claim-mobile" :disabled="!hasStakerRewards && !hasBonusRewards">
+            {{ $t('stakingV3.claimNow') }}
+          </button>
+        </claim-and-restake-button>
         <img
           class="bg--rewards"
           :src="require('/src/staking-v3/assets/unclaimed_rewards_bg.webp')"
           alt=""
         />
       </div>
-      <button
-        v-if="width >= screenSize.sm"
-        class="btn--claim"
-        :disabled="!hasStakerRewards && !hasBonusRewards"
-        @click="claimStakerAndBonusRewards()"
-      >
-        <span class="text--label">{{ $t('stakingV3.claimEstimatedRewards') }}</span>
-        <span class="text--balance">
-          <span class="text--amount">
-            {{ $n(truncate(ethers.utils.formatEther(totalStakerRewards.toString()) ?? '0', 2)) }}
+      <claim-and-restake-button v-if="width >= screenSize.sm" :claim-type="ClaimType.Both">
+        <button class="btn--claim" :disabled="!hasStakerRewards && !hasBonusRewards">
+          <span class="text--label">{{ $t('stakingV3.claimEstimatedRewards') }}</span>
+          <span class="text--balance">
+            <span class="text--amount">
+              {{ $n(truncate(ethers.utils.formatEther(totalStakerRewards.toString()) ?? '0', 2)) }}
+            </span>
+            <div class="text--symbol">{{ nativeTokenSymbol }}</div>
           </span>
-          <div class="text--symbol">{{ nativeTokenSymbol }}</div>
-        </span>
-      </button>
+        </button>
+      </claim-and-restake-button>
     </div>
     <modal-unlock-tokens
       v-if="lockedButUnstaked > BigInt(0)"
@@ -178,6 +175,8 @@ import { useNetworkInfo, useBreakpoints } from 'src/hooks';
 import { truncate } from '@astar-network/astar-sdk-core';
 import Balloon from 'src/components/common/Balloon.vue';
 import ModalUnlockTokens from './ModalUnlockTokens.vue';
+import ClaimAndRestakeButton from '../ClaimAndRestakeButton.vue';
+import { ClaimType } from 'src/staking-v3/logic';
 
 export default defineComponent({
   components: {
@@ -185,6 +184,7 @@ export default defineComponent({
     TokenBalanceNative,
     Balloon,
     ModalUnlockTokens,
+    ClaimAndRestakeButton,
   },
   props: {
     tabSelected: {
@@ -203,11 +203,10 @@ export default defineComponent({
       totalStake,
       protocolState,
       eraLengths,
-      claimStakerAndBonusRewards,
       formatPeriod,
     } = useDappStaking();
 
-    const bonus = ref<BigInt>(BigInt(0));
+    const bonus = ref<bigint>(BigInt(0));
     const { getEstimatedBonus } = useAprV3({ isWatch: false });
 
     const { navigateToVote } = useDappStakingNavigation();
@@ -265,6 +264,7 @@ export default defineComponent({
     watchEffect(setBonus);
 
     return {
+      ClaimType,
       rewards,
       totalStakerRewards,
       hasStakerRewards,
@@ -284,7 +284,6 @@ export default defineComponent({
       closeLockedBalloon,
       closeStakedBalloon,
       truncate,
-      claimStakerAndBonusRewards,
       navigateToVote,
       handleTabSelected,
       formatPeriod,
@@ -475,6 +474,7 @@ export default defineComponent({
   background: linear-gradient(101deg, #0297fb 50.27%, #0070eb 88.26%, #0ae2ff 173.42%);
   line-height: 1.25;
   transition: all 0.2s ease;
+  cursor: pointer;
   &:hover {
     filter: brightness(1.2);
   }
@@ -503,6 +503,7 @@ export default defineComponent({
 }
 
 .btn--claim-mobile {
+  width: 100%;
   padding: 8px;
   border-radius: 9999px;
   background: linear-gradient(101deg, #0297fb 50.27%, #0070eb 88.26%, #0ae2ff 173.42%);

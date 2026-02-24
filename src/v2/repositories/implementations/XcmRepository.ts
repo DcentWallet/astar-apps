@@ -1,9 +1,13 @@
 import { u8aToString, BN } from '@polkadot/util';
 import { QueryableStorageMultiArg } from '@polkadot/api/types';
-import { PalletAssetsAssetAccount } from '@polkadot/types/lookup';
 import { Option, Struct } from '@polkadot/types';
 import Web3 from 'web3';
-import { Asset, AssetMetadata } from 'src/v2/models';
+import {
+  Asset,
+  AssetMetadata,
+  PalletAssetsAssetAccount,
+  PalletAssetsAssetMetadata,
+} from 'src/v2/models';
 import { IXcmRepository } from 'src/v2/repositories';
 import { injectable, inject } from 'inversify';
 import { ExtrinsicPayload, IApi, IApiFactory } from 'src/v2/integration';
@@ -19,6 +23,8 @@ import { decodeAddress, evmToAddress } from '@polkadot/util-crypto';
 import { TokenId } from 'src/v2/config/types';
 import { Chain, XcmChain } from 'src/v2/models/XcmModels';
 import { FrameSystemAccountInfo } from 'src/v2/repositories/implementations/SystemRepository';
+import { ethers } from 'ethers';
+import { usdtMinFeeAmount } from 'src/modules/xcm/tokens';
 
 interface AssetConfig extends Struct {
   v1: {
@@ -40,6 +46,9 @@ export const ASTAR_ADDRESS_PREFIX = 5;
 
 @injectable()
 export class XcmRepository implements IXcmRepository {
+  // XCM version to use for all message constructions
+  protected readonly xcmVersion: 'V3' | 'V5' = 'V3';
+
   // Ids of Astar tokens on foreign network. To be initialized in iherited class.
   protected astarTokens: TokenId;
 
@@ -59,7 +68,8 @@ export class XcmRepository implements IXcmRepository {
 
     let result: Asset[] = [];
     if (metadata.length > 0) {
-      metadata.forEach(([key, value]) => {
+      metadata.forEach(([key, v]) => {
+        const value = <PalletAssetsAssetMetadata>v;
         const id = key.args.map((x) => x.toString())[0];
         const deposit = value.deposit.toString();
         const name = u8aToString(value.name);
@@ -121,10 +131,9 @@ export class XcmRepository implements IXcmRepository {
       throw `Parachain id for ${to.name} is not defined`;
     }
 
-    const version = 'V3';
     // the target parachain connected to the current relaychain
     const destination = {
-      [version]: {
+      [this.xcmVersion]: {
         interior: {
           X1: {
             Parachain: new BN(to.parachainId),
@@ -142,7 +151,7 @@ export class XcmRepository implements IXcmRepository {
     };
 
     const beneficiary = {
-      [version]: {
+      [this.xcmVersion]: {
         interior: {
           X1: {
             AccountId32,
@@ -153,14 +162,16 @@ export class XcmRepository implements IXcmRepository {
     };
 
     const assets = {
-      [version]: [
+      [this.xcmVersion]: [
         {
           fun: {
             Fungible: amount,
           },
           id: {
             Concrete: {
-              interior: 'Here',
+              interior: {
+                Here: null,
+              },
               parents: new BN(0),
             },
           },
@@ -168,15 +179,20 @@ export class XcmRepository implements IXcmRepository {
       ],
     };
 
+    const weightLimit = {
+      Unlimited: null,
+    };
+
     return await this.buildTxCall(
       from,
       endpoint,
       'xcmPallet',
-      'reserveTransferAssets',
+      'limitedReserveTransferAssets',
       destination,
       beneficiary,
       assets,
-      new BN(0)
+      new BN(0),
+      weightLimit
     );
   }
 
@@ -196,7 +212,7 @@ export class XcmRepository implements IXcmRepository {
     };
 
     const assets = {
-      V3: {
+      [this.xcmVersion]: {
         fun: {
           Fungible: new BN(amount),
         },
@@ -205,7 +221,7 @@ export class XcmRepository implements IXcmRepository {
     };
 
     const destination = {
-      V3: {
+      [this.xcmVersion]: {
         interior: {
           X1: {
             AccountId32: {
@@ -257,7 +273,7 @@ export class XcmRepository implements IXcmRepository {
     try {
       const api = await this.apiFactory.get(endpoint);
       const { data } = await api.query.system.account<FrameSystemAccountInfo>(address);
-      return (data.free.toBn() as BN).sub(new BN(data.miscFrozen ?? data.frozen));
+      return (data.free.toBn() as BN).sub(new BN(data.frozen));
     } catch (e) {
       console.error(e);
       return new BN(0);
@@ -280,6 +296,27 @@ export class XcmRepository implements IXcmRepository {
     throw `Undefined extrinsic call ${extrinsic} with method ${method}`;
   }
 
+  protected async fetchAssetConfigById(
+    source: XcmChain,
+    tokenId: string,
+    endpoint: string
+  ): Promise<{
+    parents: number;
+    interior: Interior;
+  }> {
+    const api = await this.apiFactory.get(endpoint);
+    const config = await api.query.xcAssetConfig.assetIdToLocation<Option<AssetConfig>>(tokenId);
+    const formattedAssetConfig = JSON.parse(config.toString());
+
+    // Get the first available version (v3, v4, v5, etc.)
+    const versionKey = Object.keys(formattedAssetConfig)[0];
+    if (!versionKey) {
+      throw new Error('No version found in asset config');
+    }
+
+    return formattedAssetConfig[versionKey];
+  }
+
   protected async fetchAssetConfig(
     source: XcmChain,
     token: Asset,
@@ -288,10 +325,7 @@ export class XcmRepository implements IXcmRepository {
     parents: number;
     interior: Interior;
   }> {
-    const api = await this.apiFactory.get(endpoint);
-    const config = await api.query.xcAssetConfig.assetIdToLocation<Option<AssetConfig>>(token.id);
-    const formattedAssetConfig = JSON.parse(config.toString());
-    return formattedAssetConfig.v3;
+    return this.fetchAssetConfigById(source, token.id, endpoint);
   }
 
   protected isAstarNativeToken(token: Asset): boolean {
@@ -345,5 +379,26 @@ export class XcmRepository implements IXcmRepository {
       const fixedAddress = a + b + c;
       return fixedAddress;
     }
+  }
+
+  protected getFeeInformation(
+    token: Asset,
+    source: XcmChain,
+    destination: XcmChain
+  ): {
+    feeAssetIsRequired: boolean;
+    feeAssetId: string;
+    feeAmount: number;
+  } {
+    if (token.metadata.name === 'PINK' && destination.name === Chain.ASSET_HUB) {
+      // Pink is not a sufficient token and cannot be used as gas fee in Asset Hub,
+      // it means we need to transfer another token to pay the fee and we will use USDT token.
+      const feeAssetIsRequired = true;
+      // 4294969280 is the USDT id
+      const feeAssetId = '4294969280';
+      const feeAmount = Number(ethers.utils.parseUnits(String(usdtMinFeeAmount), 6).toString());
+      return { feeAssetIsRequired, feeAssetId, feeAmount };
+    }
+    return { feeAssetIsRequired: false, feeAssetId: '', feeAmount: 0 };
   }
 }

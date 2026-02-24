@@ -1,9 +1,14 @@
 import { inject, injectable } from 'inversify';
 import {
+  BonusRewards,
   CombinedDappInfo,
   DappInfo,
   DappStakeInfo,
   DappState,
+  EraInfo,
+  EraLengths,
+  PeriodType,
+  ProtocolState,
   SingularStakingInfo,
   StakeAmount,
   StakerRewards,
@@ -16,6 +21,16 @@ import { IWalletService } from 'src/v2/services';
 import { ExtrinsicPayload } from '@astar-network/astar-sdk-core';
 import { ethers } from 'ethers';
 import { SignerService } from './SignerService';
+import { TvlModel } from 'src/v2/models';
+import { ASTAR_NATIVE_TOKEN, astarMainnetNativeToken } from 'src/config/chain';
+import {
+  IBalancesRepository,
+  IInflationRepository,
+  IMetadataRepository,
+  ISystemRepository,
+  ITokenApiRepository,
+} from 'src/v2/repositories';
+import { weiToToken } from 'src/token-utils';
 
 @injectable()
 export class DappStakingService extends SignerService implements IDappStakingService {
@@ -24,7 +39,12 @@ export class DappStakingService extends SignerService implements IDappStakingSer
     protected dappStakingRepository: IDappStakingRepository,
     @inject(Symbols.TokenApiProviderRepository)
     protected tokenApiRepository: IDataProviderRepository,
-    @inject(Symbols.WalletFactory) walletFactory: () => IWalletService
+    @inject(Symbols.WalletFactory) walletFactory: () => IWalletService,
+    @inject(Symbols.MetadataRepository) protected metadataRepository: IMetadataRepository,
+    @inject(Symbols.TokenApiRepository) protected priceRepository: ITokenApiRepository,
+    @inject(Symbols.BalancesRepository) protected balancesRepository: IBalancesRepository,
+    @inject(Symbols.InflationRepository) protected inflationRepository: IInflationRepository,
+    @inject(Symbols.SystemRepository) protected systemRepository: ISystemRepository
   ) {
     super(walletFactory);
   }
@@ -33,7 +53,7 @@ export class DappStakingService extends SignerService implements IDappStakingSer
   public async getDapps(
     network: string
   ): Promise<{ fullInfo: CombinedDappInfo[]; chainInfo: DappInfo[] }> {
-    Guard.ThrowIfUndefined(network, 'network');
+    Guard.ThrowIfUndefined('network', network);
 
     const [storeDapps, chainDapps, tokenApiDapps] = await Promise.all([
       this.dappStakingRepository.getDapps(network.toLowerCase()),
@@ -89,7 +109,7 @@ export class DappStakingService extends SignerService implements IDappStakingSer
   // @inheritdoc
   public async claimUnstakeAndUnlock(
     contractAddress: string,
-    amount: number,
+    amount: bigint,
     senderAddress: string,
     successMessage: string
   ): Promise<void> {
@@ -102,7 +122,7 @@ export class DappStakingService extends SignerService implements IDappStakingSer
 
   protected async getClaimUnstakeAndUnlockBatch(
     contractAddress: string,
-    amount: number,
+    amount: bigint,
     senderAddress: string
   ): Promise<ExtrinsicPayload> {
     const claimStakerCalls = await this.getClaimStakerAndBonusRewardsCalls(senderAddress);
@@ -169,7 +189,7 @@ export class DappStakingService extends SignerService implements IDappStakingSer
 
   public async unlockTokens(
     senderAddress: string,
-    amount: number,
+    amount: bigint,
     successMessage: string
   ): Promise<void> {
     Guard.ThrowIfUndefined(senderAddress, 'senderAddress');
@@ -306,10 +326,10 @@ export class DappStakingService extends SignerService implements IDappStakingSer
   }
 
   // @inheritdoc
-  public async getBonusRewards(senderAddress: string): Promise<bigint> {
+  public async getBonusRewards(senderAddress: string): Promise<BonusRewards> {
     const result = await this.getBonusRewardsAndContractsToClaim(senderAddress);
 
-    return result.rewards;
+    return result;
   }
 
   public async claimBonusRewards(senderAddress: string, successMessage: string): Promise<void> {
@@ -361,11 +381,13 @@ export class DappStakingService extends SignerService implements IDappStakingSer
   ): Promise<ExtrinsicPayload[] | undefined> {
     const result = await this.getBonusRewardsAndContractsToClaim(senderAddress);
 
-    if (result.contractsToClaim.length === 0) {
+    if (result.contractsToClaim.size === 0) {
       return undefined;
     }
 
-    return await this.dappStakingRepository.getClaimBonusRewardsCalls(result.contractsToClaim);
+    return await this.dappStakingRepository.getClaimBonusRewardsCalls([
+      ...result.contractsToClaim.keys(),
+    ]);
   }
 
   // @inheritdoc
@@ -387,6 +409,18 @@ export class DappStakingService extends SignerService implements IDappStakingSer
       unstakeAmount
     );
 
+    await this.signCall(batch, senderAddress, successMessage);
+  }
+
+  // @inheritdoc
+  public async claimAndMoveStake(
+    senderAddress: string,
+    moveFromAddress: string,
+    stakeInfo: DappStakeInfo[],
+    successMessage: string
+  ): Promise<void> {
+    this.guardStake(senderAddress, stakeInfo, moveFromAddress, BigInt(0));
+    const batch = await this.getClaimAndMoveStakeBatch(senderAddress, moveFromAddress, stakeInfo);
     await this.signCall(batch, senderAddress, successMessage);
   }
 
@@ -437,13 +471,41 @@ export class DappStakingService extends SignerService implements IDappStakingSer
     if (unstakeAmount > BigInt(0)) {
       const unstakeCall = await this.dappStakingRepository.getUnstakeCall(
         unstakeFromAddress,
-        Number(ethers.utils.formatEther(unstakeAmount.toString()))
+        unstakeAmount
       );
       calls.push(unstakeCall);
     }
     // Stake tokens
     for (const info of stakeInfo) {
       calls.push(await this.dappStakingRepository.getStakeCall(info.address, info.amount));
+    }
+
+    const batch = await this.dappStakingRepository.batchAllCalls(calls);
+
+    return batch;
+  }
+
+  protected async getClaimAndMoveStakeBatch(
+    senderAddress: string,
+    moveFromAddress: string,
+    stakeInfo: DappStakeInfo[]
+  ): Promise<ExtrinsicPayload> {
+    const calls: ExtrinsicPayload[] = [];
+
+    // Staker rewards
+    const claimStakerCall = await this.getClaimStakerRewardsCall(senderAddress);
+    claimStakerCall && calls.push(...claimStakerCall);
+    // Bonus rewards
+    const claimBonusCalls = await this.getClaimBonusRewardsCalls(senderAddress);
+    claimBonusCalls && calls.push(...claimBonusCalls);
+    // Move stake
+    for (const info of stakeInfo) {
+      const moveCall = await this.dappStakingRepository.getMoveStakeCall(
+        moveFromAddress,
+        info.address,
+        info.amount
+      );
+      moveCall && calls.push(moveCall);
     }
 
     const batch = await this.dappStakingRepository.batchAllCalls(calls);
@@ -472,10 +534,8 @@ export class DappStakingService extends SignerService implements IDappStakingSer
     return expiredEntries > 0;
   }
 
-  private async getBonusRewardsAndContractsToClaim(
-    senderAddress: string
-  ): Promise<{ rewards: bigint; contractsToClaim: string[] }> {
-    let result = { rewards: BigInt(0), contractsToClaim: Array<string>() };
+  private async getBonusRewardsAndContractsToClaim(senderAddress: string): Promise<BonusRewards> {
+    let result = { amount: BigInt(0), contractsToClaim: new Map<string, bigint>() };
     const [stakerInfo, protocolState, constants] = await Promise.all([
       this.dappStakingRepository.getStakerInfo(senderAddress, true),
       this.dappStakingRepository.getProtocolState(),
@@ -494,9 +554,10 @@ export class DappStakingService extends SignerService implements IDappStakingSer
       ) {
         const periodEndInfo = await this.dappStakingRepository.getPeriodEndInfo(info.staked.period);
         if (periodEndInfo) {
-          result.rewards +=
+          const reward =
             (info.staked.voting * periodEndInfo.bonusRewardPool) / periodEndInfo.totalVpStake;
-          result.contractsToClaim.push(contract);
+          result.amount += reward;
+          result.contractsToClaim.set(contract, reward);
         } else {
           throw `Period end info not found for period ${info.staked.period}.`;
         }
@@ -562,7 +623,9 @@ export class DappStakingService extends SignerService implements IDappStakingSer
         if (tierReward) {
           const dApp = tierReward?.dapps.find((d) => d.dappId === dapp.id);
           if (dApp && dApp.tierId !== undefined) {
-            result.rewards += tierReward.rewards[dApp.tierId];
+            result.rewards +=
+              tierReward.rewards[dApp.tierId] +
+              BigInt(dApp.rank) * tierReward.rankRewards[dApp.tierId];
             result.erasToClaim.push(firstEra + index);
           }
         }
@@ -661,6 +724,100 @@ export class DappStakingService extends SignerService implements IDappStakingSer
     await this.dappStakingRepository.startAccountLedgerSubscription(address);
   }
 
+  public async getRegisteredContract(developerAddress: string): Promise<string | undefined> {
+    const allDapps = await this.dappStakingRepository.getChainDapps();
+    const dapp = allDapps.find((d) => d.owner === developerAddress);
+
+    return dapp?.address;
+  }
+
+  public async getTvl(): Promise<TvlModel> {
+    const metadata = await this.metadataRepository.getChainMetadata();
+    const [tvl, priceUsd] = await Promise.all([
+      (await this.dappStakingRepository.getCurrentEraInfo()).totalLocked.toString(),
+      this.priceRepository.getUsdPrice(metadata.token),
+    ]);
+
+    const tvlDefaultUnit = Number(
+      ethers.utils.formatUnits(BigInt(tvl.toString()), metadata.decimals)
+    );
+    const tvlUsd = astarMainnetNativeToken.includes(metadata.token as ASTAR_NATIVE_TOKEN)
+      ? tvlDefaultUnit * priceUsd
+      : 0;
+
+    return new TvlModel(tvl, tvlDefaultUnit, tvlUsd);
+  }
+
+  // @inheritdoc
+  public async getStakerApr(block?: number): Promise<number> {
+    const [totalIssuance, inflationParams, eraLengths, eraInfo, protocolState, blockTime] =
+      await Promise.all([
+        this.balancesRepository.getTotalIssuance(block),
+        this.inflationRepository.getInflationParams(block),
+        this.dappStakingRepository.getEraLengths(block),
+        this.dappStakingRepository.getCurrentEraInfo(block),
+        this.dappStakingRepository.getProtocolState(block),
+        this.systemRepository.getBlockTimeInSeconds(block),
+      ]);
+
+    const cyclesPerYear = this.getCyclesPerYear(eraLengths, blockTime);
+    const currentStakeAmount = this.getStakeAmount(protocolState, eraInfo);
+
+    const stakedPercent = currentStakeAmount / weiToToken(totalIssuance);
+    const { baseStakersPart, adjustableStakersPart, idealStakingRate, maxInflationRate } =
+      inflationParams;
+
+    const stakerRewardPercent =
+      baseStakersPart + adjustableStakersPart * Math.min(1, stakedPercent / idealStakingRate);
+    const stakerApr =
+      ((maxInflationRate * stakerRewardPercent) / stakedPercent) * cyclesPerYear * 100;
+
+    return stakerApr;
+  }
+
+  // @inheritdoc
+  public async getBonusApr(
+    simulatedVoteAmount: number = 1000,
+    block?: number
+  ): Promise<{ value: number; simulatedBonusPerPeriod: number }> {
+    const [inflationConfiguration, eraLengths, eraInfo, protocolState, blockTime] =
+      await Promise.all([
+        this.inflationRepository.getInflationConfiguration(block),
+        this.dappStakingRepository.getEraLengths(block),
+        this.dappStakingRepository.getCurrentEraInfo(block),
+        this.dappStakingRepository.getProtocolState(block),
+        this.systemRepository.getBlockTimeInSeconds(block),
+      ]);
+
+    const cyclesPerYear = this.getCyclesPerYear(eraLengths, blockTime);
+
+    const formattedBonusRewardsPoolPerPeriod = weiToToken(
+      inflationConfiguration.bonusRewardPoolPerPeriod
+    );
+    const voteAmount = this.getVoteAmount(protocolState, eraInfo);
+    const bonusPercentPerPeriod = formattedBonusRewardsPoolPerPeriod / voteAmount;
+    const simulatedBonusPerPeriod = simulatedVoteAmount * bonusPercentPerPeriod;
+    const periodsPerYear = eraLengths.periodsPerCycle * cyclesPerYear;
+    const simulatedBonusAmountPerYear = simulatedBonusPerPeriod * periodsPerYear;
+    const bonusApr = (simulatedBonusAmountPerYear / simulatedVoteAmount) * 100;
+
+    return { value: bonusApr, simulatedBonusPerPeriod };
+  }
+
+  private getCyclesPerYear(eraLength: EraLengths, blockTimeInSeconds: number): number {
+    // TODO read from chain
+    const secsOneYear = 365 * 24 * 60 * 60;
+    const periodLength =
+      eraLength.standardErasPerBuildAndEarnPeriod + eraLength.standardErasPerVotingPeriod;
+
+    const eraPerCycle = periodLength * eraLength.periodsPerCycle;
+    const blocksStandardEraLength = eraLength.standardEraLength;
+    const blockPerCycle = blocksStandardEraLength * eraPerCycle;
+    const cyclePerYear = secsOneYear / blockTimeInSeconds / blockPerCycle;
+
+    return cyclePerYear;
+  }
+
   private async getStakerEraRange(senderAddress: string) {
     const [protocolState, ledger, constants] = await Promise.all([
       this.dappStakingRepository.getProtocolState(),
@@ -719,5 +876,25 @@ export class DappStakingService extends SignerService implements IDappStakingSer
     rewardRetentionInPeriods: number
   ): boolean {
     return stakedPeriod < currentPeriod - rewardRetentionInPeriods;
+  }
+
+  private getStakeAmount(protocolState: ProtocolState, eraInfo: EraInfo): number {
+    const currentStakeAmount = weiToToken(
+      protocolState.periodInfo.subperiod === PeriodType.Voting
+        ? eraInfo.nextStakeAmount?.totalStake ?? BigInt(0)
+        : eraInfo.currentStakeAmount.totalStake
+    );
+
+    return currentStakeAmount;
+  }
+
+  private getVoteAmount(protocolState: ProtocolState, eraInfo: EraInfo): number {
+    const currentVoteAmount = weiToToken(
+      protocolState.periodInfo.subperiod === PeriodType.Voting
+        ? eraInfo.nextStakeAmount?.voting ?? BigInt(0)
+        : eraInfo.currentStakeAmount.voting
+    );
+
+    return currentVoteAmount;
   }
 }

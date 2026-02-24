@@ -4,7 +4,9 @@
       <swiper-slide v-for="(item, index) in combinedCampaigns" :key="index">
         <div
           class="card--swiper"
-          @click="item.link !== undefined ? goToLink(item.link) : goDappPageLink(item.address)"
+          @click="
+            item.link !== undefined ? navigateInNewTab(item.link) : goDappPageLink(item.address)
+          "
         >
           <img :src="item.img" class="card__img" />
           <div class="card__bottom">
@@ -29,12 +31,12 @@ import { defineComponent } from 'vue';
 import { networkParam, Path } from 'src/router/routes';
 import { useRouter } from 'vue-router';
 import { useCampaign } from 'src/hooks';
-
 // Import Swiper
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import { Autoplay } from 'swiper/modules';
+import { navigateInNewTab } from 'src/util-general';
 
 export default defineComponent({
   components: {
@@ -44,21 +46,15 @@ export default defineComponent({
   setup() {
     const router = useRouter();
     const { combinedCampaigns } = useCampaign();
-
-    const goToLink = (link: string): void => {
-      window.open(link, '_blank');
-    };
-
     const goDappPageLink = (address: string | undefined): void => {
       const base = networkParam + Path.DappStaking + Path.Dapp;
       const url = `${base}?dapp=${address?.toLowerCase()}`;
       router.push(url);
     };
-
     return {
       modules: [Autoplay],
       combinedCampaigns,
-      goToLink,
+      navigateInNewTab,
       goDappPageLink,
     };
   },
@@ -66,7 +62,6 @@ export default defineComponent({
 </script>
 <style lang="scss" scoped>
 @import '../dapp-staking/my-staking/styles/ads-area.scss';
-
 .wrapper--ads-area {
   margin: 0;
   padding: 0;
@@ -74,15 +69,14 @@ export default defineComponent({
 }
 .swiper {
   overflow: hidden;
+  z-index: 0;
 }
-
 .card--swiper {
   border: solid 1px $gray-2;
   border-radius: 16px;
   box-shadow: none;
   background-color: white;
 }
-
 .body--dark {
   .card--swiper {
     border-color: $navy-3;

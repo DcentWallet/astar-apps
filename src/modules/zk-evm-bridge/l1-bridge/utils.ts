@@ -8,7 +8,6 @@ import {
   EthBridgeChainIdToName,
   EthBridgeContract,
   EthBridgeNetworkName,
-  ZK_EVM_BRIDGE_ABI,
   ZK_EVM_AGGREGATED_BRIDGE_ABI,
   ZkChainId,
   ZkNetworkId,
@@ -34,9 +33,8 @@ export const getNetworkId = async (chainName: EthBridgeNetworkName): Promise<num
   if (!web3) throw Error('Failed creating Web3 instance');
 
   const contractAddress = EthBridgeContract[chainName];
-  const isAggregateContract = contractAddress === EthBridgeContract[EthBridgeNetworkName.Ethereum];
 
-  const abi = isAggregateContract ? ZK_EVM_AGGREGATED_BRIDGE_ABI : ZK_EVM_BRIDGE_ABI;
+  const abi = ZK_EVM_AGGREGATED_BRIDGE_ABI;
   const contract = new web3.eth.Contract(abi as AbiItem[], contractAddress);
   return Number(await contract.methods.networkID().call());
 };
@@ -59,7 +57,7 @@ export const getChainIdFromNetId = (zkNetwork: ZkNetworkId): ZkChainId => {
   } else {
     return zkNetwork === ZkNetworkId.L1
       ? EthBridgeChainId[EthBridgeNetworkName.Sepolia]
-      : EthBridgeChainId[EthBridgeNetworkName.Zkatana];
+      : EthBridgeChainId[EthBridgeNetworkName.Zkyoto];
   }
 };
 
@@ -117,10 +115,7 @@ export const getBridgedTokenAddress = async ({
   const fromChainWeb3 = buildWeb3Instance(srcChainId) as Web3;
   const toChainContractAddress = EthBridgeContract[fromChainName];
 
-  const isAggregateContract =
-    toChainContractAddress === EthBridgeContract[EthBridgeNetworkName.Ethereum];
-
-  const abi = isAggregateContract ? ZK_EVM_AGGREGATED_BRIDGE_ABI : ZK_EVM_BRIDGE_ABI;
+  const abi = ZK_EVM_AGGREGATED_BRIDGE_ABI;
   const fromChainContract = new fromChainWeb3.eth.Contract(
     abi as AbiItem[],
     toChainContractAddress
@@ -160,7 +155,17 @@ export const handleAddDefaultTokens = (): void => {
       seen.add(`${token.srcChainId}-${token.address}`);
       return !duplicate;
     });
-    localStorage.setItem(LOCAL_STORAGE.EVM_TOKEN_IMPORTS, JSON.stringify(updatedTokens));
+
+    // Todo: this is temporary solution to remove weETH from browser's localstorage
+    // This will be removed after OFT weETH is added to Astar zkEVM assets
+    const filteredTokens = updatedTokens.filter((token) => {
+      const weEthEthereum = '0xcd5fe23c85820f7b72d0926fc9b05b43e359b7ee';
+      const weEthZkevm = '0xcD68DFf4415358c35a28f96Fd5bF7083B22De1D6';
+      const address = token.address.toLowerCase();
+      return address !== weEthEthereum.toLowerCase() && address !== weEthZkevm.toLowerCase();
+    });
+
+    localStorage.setItem(LOCAL_STORAGE.EVM_TOKEN_IMPORTS, JSON.stringify(filteredTokens));
   } catch (error) {
     console.error(error);
   }

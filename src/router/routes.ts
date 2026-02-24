@@ -10,19 +10,22 @@ import { LOCAL_STORAGE } from 'src/config/localStorage';
 import Store from 'src/pages/DappStaking.vue';
 import Dashboard from 'src/pages/Dashboard.vue';
 import RegisterDapp from 'src/pages/RegisterDapp.vue';
-import StakeManage from 'src/pages/StakeManage.vue';
 import DappPage from 'src/pages/DappPage.vue';
 import Vote from 'src/staking-v3/components/Vote.vue';
 import DiscoverV3 from 'src/staking-v3/components/DiscoverV3.vue';
 import Owner from 'src/staking-v3/components/Owner.vue';
 import MaintenanceMode from 'src/staking-v3/components/MaintenanceMode.vue';
 import { RouteRecordRaw } from 'vue-router';
+import LayerZero from 'src/components/bridge/layerzero/LayerZero.vue';
+import Ccip from 'src/components/bridge/ccip/Ccip.vue';
 
 export {
   buildTransferPageLink,
   getHeaderName,
   buildXvmTransferPageLink,
   buildEthereumBridgePageLink,
+  buildLzBridgePageLink,
+  buildCcipBridgePageLink,
 } from 'src/router/utils';
 
 const networkIdxStore = localStorage.getItem(LOCAL_STORAGE.NETWORK_IDX);
@@ -35,6 +38,8 @@ export enum Path {
   Assets = '/assets',
   Bridge = '/bridge',
   Ethereum = '/ethereum',
+  Ccip = '/ccip',
+  Layerzero = '/layerzero',
   Dashboard = '/dashboard',
   DappStaking = '/dapp-staking',
   Discover = '/discover',
@@ -118,6 +123,14 @@ const routes: RouteRecordRaw[] = [
         path: 'ethereum',
         component: L1,
       },
+      {
+        path: 'ccip',
+        component: Ccip,
+      },
+      {
+        path: 'Layerzero',
+        component: LayerZero,
+      },
     ],
   },
 
@@ -157,10 +170,6 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'owner',
         component: Owner,
-      },
-      {
-        path: 'stake',
-        component: StakeManage,
       },
       {
         path: 'dapp',

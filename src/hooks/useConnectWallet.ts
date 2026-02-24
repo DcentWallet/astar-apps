@@ -1,6 +1,5 @@
 import {
   ASTAR_SS58_FORMAT,
-  astarChain,
   checkSumEvmAddress,
   hasProperty,
   wait,
@@ -15,8 +14,9 @@ import {
   supportEvmWalletObj,
   supportWalletObj,
 } from 'src/config/wallets';
-import { getChainId, handleCheckProviderChainId, setupNetwork } from 'src/config/web3';
-import { ETHEREUM_EXTENSION, useAccount, useNetworkInfo } from 'src/hooks';
+import { handleCheckProviderChainId } from 'src/config/web3';
+import { useAccount, useNetworkInfo } from 'src/hooks';
+import { ETHEREUM_EXTENSION } from 'src/modules/account';
 import { useEvmAccount } from 'src/hooks/custom-signature/useEvmAccount';
 import {
   castMobileSource,
@@ -39,7 +39,7 @@ import { useRouter } from 'vue-router';
 import * as utils from 'src/hooks/custom-signature/utils';
 
 export const useConnectWallet = () => {
-  const { SELECTED_ADDRESS, IS_LEDGER, SELECTED_WALLET } = LOCAL_STORAGE;
+  const { SELECTED_ADDRESS, SELECTED_WALLET } = LOCAL_STORAGE;
 
   const modalAccountSelect = ref<boolean>(false);
   const modalPolkasafeSelect = ref<boolean>(false);
@@ -52,8 +52,7 @@ export const useConnectWallet = () => {
   const { requestAccounts, requestSignature } = useEvmAccount();
   const { currentAccount, currentAccountName, disconnectAccount } = useAccount();
   const router = useRouter();
-  const { currentNetworkIdx, currentNetworkChain, evmNetworkIdx, currentNetworkName } =
-    useNetworkInfo();
+  const { evmNetworkIdx, currentNetworkName } = useNetworkInfo();
 
   const currentRouter = computed(() => router.currentRoute.value.matched[0]);
   const currentNetworkStatus = computed(() => store.getters['general/networkStatus']);
@@ -128,16 +127,9 @@ export const useConnectWallet = () => {
       const accounts = await requestAccounts();
       accounts?.length && setCurrentEcdsaAccount(accounts[0]);
 
-      const chainId = getChainId(currentNetworkIdx.value);
-
       const provider = getEvmProvider(currentWallet);
       if (!provider) {
         return false;
-      }
-
-      // Memo: Do not change the network for the Bridge page
-      if (currentRouter.value.name !== 'Bridge') {
-        isSetupNetwork && (await setupNetwork({ network: chainId, provider }));
       }
 
       // If SubWallet return empty evm accounts, it required to switch to evm network and will request accounts again.
@@ -372,16 +364,6 @@ export const useConnectWallet = () => {
     });
   };
 
-  // Memo: Ledger accounts are available on Astar only
-  const handleCheckLedgerEnvironment = async (): Promise<void> => {
-    const isLedger = localStorage.getItem(IS_LEDGER) === 'true';
-    if (isLedger && currentNetworkChain.value && currentNetworkChain.value !== astarChain.ASTAR) {
-      localStorage.setItem(IS_LEDGER, 'false');
-      await disconnectAccount();
-      window.location.reload();
-    }
-  };
-
   watch([selectedWallet, currentEcdsaAccount, currentAccount, isH160], changeEvmAccount);
 
   watchEffect(async () => {
@@ -399,8 +381,6 @@ export const useConnectWallet = () => {
     },
     { immediate: true }
   );
-
-  watch([currentNetworkChain], handleCheckLedgerEnvironment);
 
   // Memo: check the EVM wallet's connected chainId when users switch the page
   watch(

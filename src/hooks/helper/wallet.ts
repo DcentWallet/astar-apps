@@ -9,9 +9,9 @@ import { endpointKey, providerEndpoints } from 'src/config/chainEndpoints';
 import { LOCAL_STORAGE } from 'src/config/localStorage';
 import { supportEvmWalletObj, SupportWallet, supportWalletObj } from 'src/config/wallets';
 import { EVM, rpcUrls } from 'src/config/web3';
-import { ETHEREUM_EXTENSION } from 'src/hooks';
+import { ETHEREUM_EXTENSION } from 'src/modules/account';
 import { EthereumProvider } from 'src/hooks/types/CustomSignature';
-import { deepLink } from 'src/links';
+import { deepLink, productionOrigin } from 'src/links';
 import { addTxHistories } from 'src/modules/account';
 import { HistoryTxType } from 'src/modules/account/index';
 import { showError } from 'src/modules/extrinsic';
@@ -19,7 +19,7 @@ import { SubstrateAccount } from 'src/store/general/state';
 import { container } from 'src/v2/common';
 import { Symbols } from 'src/v2/symbols';
 import { Dispatch } from 'vuex';
-import { WalletConnectModal } from '@walletconnect/modal';
+import { WalletConnectModal, WalletConnectModalConfig } from '@walletconnect/modal';
 
 declare global {
   interface Window {
@@ -287,19 +287,19 @@ const initWcProvider = async (): Promise<typeof WcEthereumProvider> => {
   const astar = providerEndpoints[endpointKey.ASTAR];
   const shiden = providerEndpoints[endpointKey.SHIDEN];
   const shibuya = providerEndpoints[endpointKey.SHIBUYA];
-  const zKatana = providerEndpoints[endpointKey.ZKATANA];
+  const zKyoto = providerEndpoints[endpointKey.ZKYOTO];
   const astarZkEvm = providerEndpoints[endpointKey.ASTAR_ZKEVM];
 
   // Memo: this can be committed as it can be exposed on the browser anyway
-  const projectId = 'c236cca5c68248680dd7d0bf30fefbb5';
+  const projectId = '7424c1d6f096393092e9755dff0bb5f2';
+  const isProductionPage = window.location.origin === productionOrigin;
 
   // Ref: https://docs.walletconnect.com/advanced/walletconnectmodal/options#explorerrecommendedwalletids-optional
-  // Memo: disabled 'desktop wallet' section as it doesn't work for our zkEVM wallet. We might want to filter the wallet by ids in the future
+  // Memo: disabled 'desktop wallet' section for production page as it doesn't work for our zkEVM wallet. We might want to filter the wallet by ids in the future
   new WalletConnectModal({
     projectId,
-    explorerRecommendedWalletIds: 'NONE',
-    // explorerExcludedWalletIds: 'ALL',
-  });
+    explorerRecommendedWalletIds: isProductionPage ? 'NONE' : 'ALL',
+  } as WalletConnectModalConfig);
 
   // Ref: https://docs.walletconnect.com/advanced/providers/ethereum
   const provider = (await WcEthereumProvider.init({
@@ -310,7 +310,7 @@ const initWcProvider = async (): Promise<typeof WcEthereumProvider> => {
       Number(shiden.evmChainId),
       Number(shibuya.evmChainId),
       Number(astarZkEvm.evmChainId),
-      Number(zKatana.evmChainId),
+      Number(zKyoto.evmChainId),
       EVM.SEPOLIA_TESTNET,
     ],
     chains: [EVM.ETHEREUM_MAINNET],
@@ -319,7 +319,7 @@ const initWcProvider = async (): Promise<typeof WcEthereumProvider> => {
       [shiden.evmChainId]: shiden.evmEndpoints[0],
       [shibuya.evmChainId]: shibuya.evmEndpoints[0],
       [astarZkEvm.evmChainId]: astarZkEvm.evmEndpoints[0],
-      [zKatana.evmChainId]: zKatana.evmEndpoints[0],
+      [zKyoto.evmChainId]: zKyoto.evmEndpoints[0],
       [String(EVM.SEPOLIA_TESTNET)]: String(rpcUrls[EVM.SEPOLIA_TESTNET][0]),
     },
   })) as any;

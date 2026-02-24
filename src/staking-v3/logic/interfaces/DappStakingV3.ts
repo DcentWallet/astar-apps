@@ -1,6 +1,5 @@
-import { Balance } from '@astar-network/metamask-astar-types';
-import { AccountId32, Permill } from '@polkadot/types/interfaces';
-import {
+import type { AccountId32, Perbill, Permill } from '@polkadot/types/interfaces';
+import type {
   BTreeMap,
   Compact,
   Enum,
@@ -13,7 +12,7 @@ import {
   u32,
   u8,
 } from '@polkadot/types';
-import { Codec } from '@polkadot/types/types';
+import type { Codec } from '@polkadot/types/types';
 
 interface PalletDappStakingV3PeriodType extends Enum {
   readonly isVoting: boolean;
@@ -27,13 +26,6 @@ interface PalletDappStakingV3PeriodInfo extends Struct {
   readonly number: Compact<u32>;
   readonly subperiod: PalletDappStakingV3PeriodType;
   readonly nextSubperiodStartEra: Compact<u32>;
-}
-
-interface PalletDappStakingV3DAppState extends Enum {
-  readonly isRegistered: boolean;
-  readonly isUnregistered: boolean;
-  readonly asUnregistered: Compact<u32>;
-  readonly type: 'Registered' | 'Unregistered';
 }
 
 interface PalletDappStakingV3UnlockingChunk extends Struct {
@@ -84,8 +76,9 @@ export interface PalletDappStakingV3StakeAmount extends Struct {
 }
 
 export interface PalletDappStakingV3SingularStakingInfo extends Struct {
+  readonly previousStaked: PalletDappStakingV3StakeAmount;
   readonly staked: PalletDappStakingV3StakeAmount;
-  readonly loyalStaker: bool;
+  readonly bonusStatus: u8;
 }
 
 export interface PalletDappStakingV3PeriodEndInfo extends Struct {
@@ -110,10 +103,10 @@ export interface PalletDappStakingV3DAppTierRewards extends Struct {
   readonly dapps: BTreeMap<Compact<u16>, Compact<u8>>;
   readonly rewards: Vec<u128>;
   readonly period: Compact<u32>;
+  readonly rankRewards: Vec<u128>;
 }
 
 export interface PalletDappStakingV3EraInfo extends Struct {
-  readonly activeEraLocked: Compact<u128>;
   readonly totalLocked: Compact<u128>;
   readonly unlocking: Compact<u128>;
   readonly currentStakeAmount: PalletDappStakingV3StakeAmount;
@@ -126,14 +119,19 @@ export interface PalletDappStakingV3ContractStakeAmount extends Struct {
   readonly tierLabel: Option<PalletDappStakingV3TierLabel>;
 }
 
-export interface PalletDappStakingV3TiersConfiguration extends Struct {
-  readonly numberOfSlots: Compact<u16>;
+export interface PalletDappStakingV3TiersConfigurationLegacy extends Struct {
   readonly slotsPerTier: Vec<u16>;
   readonly rewardPortion: Vec<Permill>;
   readonly tierThresholds: Vec<PalletDappStakingV3TierThreshold>;
 }
 
-interface PalletDappStakingV3TierThreshold extends Enum {
+export interface PalletDappStakingV3TiersConfiguration extends Struct {
+  readonly slotsPerTier: Vec<u16>;
+  readonly rewardPortion: Vec<Perbill>;
+  readonly tierThresholds: Vec<u128>;
+}
+
+export interface PalletDappStakingV3TierThreshold extends Enum {
   readonly isFixedTvlAmount: boolean;
   readonly asFixedTvlAmount: {
     readonly amount: u128;
