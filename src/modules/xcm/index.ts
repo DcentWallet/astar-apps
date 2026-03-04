@@ -72,8 +72,7 @@ export let xcmChainObj: XcmChainObj = {
     parachainId: parachainIds.ASTAR,
     endpoints: [
       'wss://rpc.astar.network',
-      'wss://astar-rpc.dwellir.com',
-      'wss://astar.public.blastapi.io',
+      'wss://astar-rpc.n.dwellir.com',
       'wss://astar.api.onfinality.io/public-ws',
     ],
     chopsticksEndpoint: 'ws://localhost:9944',
@@ -87,8 +86,7 @@ export let xcmChainObj: XcmChainObj = {
     parachainId: parachainIds.ASTAR,
     endpoints: [
       'wss://rpc.astar.network',
-      'wss://astar-rpc.dwellir.com',
-      'wss://astar.public.blastapi.io',
+      'wss://astar-rpc.n.dwellir.com',
       'wss://astar.api.onfinality.io/public-ws',
     ],
     subscan: 'https://astar.subscan.io',
@@ -102,7 +100,6 @@ export let xcmChainObj: XcmChainObj = {
     endpoints: [
       'wss://kusama-rpc.polkadot.io',
       'wss://kusama-rpc.dwellir.com',
-      'wss://kusama-rpc.dwellir.com',
       'wss://kusama.api.onfinality.io/public-ws',
     ],
     subscan: 'https://kusama.subscan.io',
@@ -115,9 +112,7 @@ export let xcmChainObj: XcmChainObj = {
     parachainId: parachainIds.SHIDEN,
     endpoints: [
       'wss://rpc.shiden.astar.network',
-      'wss://shiden-rpc.dwellir.com',
-      'wss://shiden-rpc.dwellir.com',
-      'wss://shiden.public.blastapi.io',
+      'wss://shiden-rpc.n.dwellir.com',
       'wss://shiden.api.onfinality.io/public-ws',
     ],
     chopsticksEndpoint: 'ws://localhost:9961',
@@ -131,9 +126,7 @@ export let xcmChainObj: XcmChainObj = {
     parachainId: parachainIds.SHIDEN,
     endpoints: [
       'wss://rpc.shiden.astar.network',
-      'wss://shiden-rpc.dwellir.com',
-      'wss://shiden-rpc.dwellir.com',
-      'wss://shiden.public.blastapi.io',
+      'wss://shiden-rpc.n.dwellir.com',
       'wss://shiden.api.onfinality.io/public-ws',
     ],
     subscan: 'https://shiden.subscan.io',
@@ -145,10 +138,12 @@ export let xcmChainObj: XcmChainObj = {
     img: require('/src/assets/img/chain/asset-hub.svg'),
     parachainId: parachainIds.ASSET_HUB_KUSAMA,
     endpoints: [
+      'wss://statemine-rpc-tn.dwellir.com',
       'wss://kusama-asset-hub-rpc.polkadot.io',
-      'wss://statemine-rpc.dwellir.com',
+      'wss://sys.ibp.network/asset-hub-kusama',
+      'wss://asset-hub-kusama.dotters.network',
       'wss://rpc-asset-hub-kusama.luckyfriday.io',
-      'wss://statemine.api.onfinality.io/public-ws',
+      'wss://assethub-kusama.api.onfinality.io/public-ws',
     ],
     subscan: 'https://assethub-kusama.subscan.io',
     isAstarNativeToken: false,
@@ -222,7 +217,11 @@ export let xcmChainObj: XcmChainObj = {
     img: require('/src/assets/img/chain/asset-hub.svg'),
     parachainId: parachainIds.ASSET_HUB,
     endpoints: [
-      'wss://statemint-rpc.dwellir.com',
+      'wss://statemint-rpc-tn.dwellir.com',
+      'wss://asset-hub-polkadot-rpc.n.dwellir.com',
+      'wss://sys.ibp.network/asset-hub-polkadot',
+      'wss://asset-hub-polkadot.dotters.network',
+      'wss://rpc-asset-hub-polkadot.luckyfriday.io',
       'wss://polkadot-asset-hub-rpc.polkadot.io',
       'wss://statemint.api.onfinality.io/public-ws',
     ],
@@ -389,8 +388,8 @@ export const restrictedXcmNetwork = {
   [astarChain.SHIDEN]: [
     {
       chain: '',
-      // chain: Chain.MOONRIVER,
-      isRestrictedFromNative: false,
+      // chain: Chain.KUSAMA,
+      isRestrictedFromNative: true,
       isRestrictedFromEvm: true,
     },
   ],
