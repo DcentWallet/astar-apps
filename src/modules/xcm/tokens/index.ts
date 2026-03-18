@@ -22,8 +22,8 @@ export const xcmToken = {
       originAssetId: '',
       logo: require('/src/assets/img/token/dot.png'),
       isXcmCompatible: true,
-      originChain: Chain.POLKADOT,
-      minBridgeAmount: '1.1',
+      originChain: Chain.ASSET_HUB,
+      minBridgeAmount: '0.1',
     },
     {
       symbol: 'ACA',
@@ -214,8 +214,8 @@ export const xcmToken = {
       originAssetId: '',
       logo: require('/src/assets/img/token/kusama.png'),
       isXcmCompatible: true,
-      originChain: Chain.KUSAMA,
-      minBridgeAmount: '0.1',
+      originChain: Chain.ASSET_HUB_KUSAMA,
+      minBridgeAmount: '0.01',
     },
     {
       symbol: 'ASEED',
@@ -258,16 +258,7 @@ export const xcmToken = {
       originChain: Chain.MOONRIVER,
       minBridgeAmount: '0.007',
     },
-    {
-      symbol: 'USDT',
-      isNativeToken: false,
-      assetId: '4294969280',
-      originAssetId: '1984',
-      logo: require('/src/assets/img/token/usdt.png'),
-      isXcmCompatible: true,
-      originChain: Chain.ASSET_HUB_KUSAMA,
-      minBridgeAmount: '0.1',
-    },
+
     {
       symbol: 'KBTC',
       isNativeToken: false,
